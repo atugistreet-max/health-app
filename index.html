@@ -1,0 +1,2238 @@
+<!DOCTYPE html>
+<html lang="ja">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>健康状態 統合管理デスクトップアプリ</title>
+  <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+  <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
+  <style>
+    :root {
+      --bg: #0f172a;
+      --panel: #1e293b;
+      --card: #334155;
+      --text: #f8fafc;
+      --sub: #94a3b8;
+      --primary: #3b82f6;
+      --accent: #10b981;
+      --warn: #f59e0b;
+      --danger: #ef4444;
+      --purple: #8b5cf6;
+      --border: #475569;
+    }
+    * { box-sizing: border-box; }
+    html, body {
+      width: 100%;
+      max-width: 100vw;
+      overflow-x: hidden;
+      margin: 0;
+      padding: 0;
+      font-family: "Segoe UI", "Meiryo", "Yu Gothic", "Hiragino Sans", sans-serif;
+      background: var(--bg);
+      color: var(--text);
+    }
+    body {
+      display: flex;
+      flex-direction: column;
+      min-height: 100vh;
+    }
+    .top-bar {
+      background: var(--panel);
+      border-bottom: 1px solid var(--border);
+      padding: 10px 16px;
+      display: flex;
+      flex-wrap: wrap;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+      position: sticky;
+      top: 0;
+      z-index: 100;
+      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+    }
+    .brand {
+      display: flex;
+      align-items: center;
+      gap: 10px;
+      flex-wrap: wrap;
+    }
+    .brand h1 {
+      font-size: 1.18rem;
+      margin: 0;
+      font-weight: 700;
+    }
+    .badge {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      padding: 4px 10px;
+      border-radius: 999px;
+      font-size: 0.75rem;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    .badge-sobriety {
+      background: rgba(59, 130, 246, 0.2);
+      color: #60a5fa;
+      border: 1px solid rgba(59, 130, 246, 0.45);
+      padding: 4px 11px;
+      border-radius: 999px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .badge-nosmoking {
+      background: rgba(249, 115, 22, 0.2);
+      color: #fb923c;
+      border: 1px solid rgba(249, 115, 22, 0.5);
+      padding: 4px 11px;
+      border-radius: 999px;
+      font-size: 0.76rem;
+      font-weight: 700;
+      white-space: nowrap;
+    }
+    .controls {
+      display: flex;
+      flex-wrap: wrap;
+      align-items: center;
+      gap: 8px;
+    }
+    .period-group {
+      display: flex;
+      background: var(--bg);
+      padding: 3px;
+      border-radius: 8px;
+      border: 1px solid var(--border);
+    }
+    .period-btn {
+      background: transparent;
+      color: var(--sub);
+      border: none;
+      padding: 5px 11px;
+      border-radius: 6px;
+      font-weight: 600;
+      font-size: 0.78rem;
+      cursor: pointer;
+      transition: all 0.15s;
+    }
+    .period-btn:hover { color: var(--text); }
+    .period-btn.active {
+      background: var(--primary);
+      color: #fff;
+    }
+    .action-btn {
+      background: var(--card);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 6px 12px;
+      border-radius: 8px;
+      font-size: 0.78rem;
+      font-weight: 600;
+      cursor: pointer;
+      display: inline-flex;
+      align-items: center;
+      gap: 5px;
+      transition: background 0.15s;
+      white-space: nowrap;
+    }
+    .action-btn:hover { background: #475569; }
+    .action-btn.primary {
+      background: var(--accent);
+      border-color: #059669;
+      color: #fff;
+    }
+    .action-btn.primary:hover { background: #059669; }
+    .action-btn.blue {
+      background: var(--primary);
+      border-color: #2563eb;
+      color: #fff;
+    }
+    .action-btn.danger {
+      background: rgba(239, 68, 68, 0.2);
+      border-color: rgba(239, 68, 68, 0.5);
+      color: #fca5a5;
+    }
+
+    .container {
+      width: 100%;
+      max-width: 1600px;
+      margin: 0 auto;
+      padding: 14px 16px;
+      flex: 1;
+    }
+
+    #toast-box {
+      position: fixed;
+      bottom: 20px;
+      right: 20px;
+      background: rgba(6, 78, 59, 0.96);
+      border: 1px solid #10b981;
+      color: #ecfdf5;
+      padding: 10px 14px;
+      border-radius: 10px;
+      box-shadow: 0 8px 24px rgba(0,0,0,0.45);
+      z-index: 9999;
+      display: none;
+      max-width: 88vw;
+      font-size: 0.82rem;
+      line-height: 1.4;
+    }
+
+    .sync-panel {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 10px;
+      padding: 14px;
+      margin-bottom: 14px;
+      display: none;
+    }
+    .sync-panel.open { display: block; }
+    .sync-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(280px, 1fr));
+      gap: 12px;
+      margin-top: 10px;
+    }
+    .sync-box {
+      background: rgba(15, 23, 42, 0.65);
+      border: 1px solid var(--border);
+      border-radius: 8px;
+      padding: 12px;
+    }
+    .sync-box input[type="text"] {
+      width: 100%;
+      padding: 5px 8px;
+      background: var(--bg);
+      border: 1px solid var(--border);
+      color: var(--text);
+      border-radius: 6px;
+      font-size: 0.78rem;
+    }
+
+    .kpi-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fit, minmax(210px, 1fr));
+      gap: 12px;
+      margin-bottom: 16px;
+    }
+    .kpi-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 12px 16px;
+      box-shadow: 0 2px 6px rgba(0,0,0,0.15);
+    }
+    .kpi-title {
+      font-size: 0.76rem;
+      color: var(--sub);
+      margin-bottom: 5px;
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+    }
+    .kpi-val {
+      font-size: 1.32rem;
+      font-weight: 700;
+    }
+    .kpi-sub {
+      font-size: 0.73rem;
+      color: #cbd5e1;
+      margin-top: 4px;
+      line-height: 1.35;
+    }
+
+    .nav-tabs {
+      display: flex;
+      gap: 8px;
+      margin-bottom: 16px;
+      border-bottom: 1px solid var(--border);
+      padding-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    .tab-btn {
+      background: var(--panel);
+      color: var(--sub);
+      border: 1px solid var(--border);
+      padding: 8px 14px;
+      border-radius: 8px;
+      font-weight: 600;
+      font-size: 0.83rem;
+      cursor: pointer;
+      white-space: nowrap;
+      transition: all 0.15s;
+    }
+    .tab-btn:hover { color: var(--text); }
+    .tab-btn.active {
+      background: #2563eb;
+      color: #fff;
+      border-color: #3b82f6;
+    }
+
+    .charts-grid {
+      display: grid;
+      grid-template-columns: repeat(2, minmax(0, 1fr));
+      gap: 14px;
+      margin-bottom: 18px;
+    }
+    @media (max-width: 1024px) {
+      .charts-grid { grid-template-columns: minmax(0, 1fr); }
+    }
+    .chart-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px;
+      box-shadow: 0 2px 8px rgba(0,0,0,0.18);
+      min-width: 0;
+    }
+    .chart-header {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      margin-bottom: 8px;
+      flex-wrap: wrap;
+      gap: 6px;
+    }
+    .chart-header h3 {
+      font-size: 0.9rem;
+      margin: 0;
+      color: #e2e8f0;
+    }
+    .chart-wrap {
+      position: relative;
+      height: 265px;
+      width: 100%;
+    }
+
+    .table-card {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      border-radius: 12px;
+      padding: 14px 16px;
+      margin-bottom: 16px;
+      overflow-x: auto;
+    }
+    .table-card h3 { margin: 0 0 10px 0; font-size: 0.95rem; }
+    table {
+      width: 100%;
+      border-collapse: collapse;
+      font-size: 0.77rem;
+    }
+    th, td {
+      padding: 6px 8px;
+      text-align: left;
+      border-bottom: 1px solid rgba(71, 85, 105, 0.5);
+    }
+    th {
+      background: rgba(15, 23, 42, 0.6);
+      color: #93c5fd;
+      font-weight: 600;
+      white-space: nowrap;
+    }
+    tr:hover td { background: rgba(51, 65, 85, 0.35); }
+
+    .merge-panel {
+      background: rgba(15, 23, 42, 0.9);
+      border: 1px solid var(--accent);
+      border-radius: 12px;
+      padding: 14px;
+      margin-bottom: 16px;
+      display: none;
+    }
+    .merge-panel.open { display: block; }
+    .form-grid {
+      display: grid;
+      grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+      gap: 8px;
+      margin-top: 10px;
+    }
+    .form-field {
+      display: flex;
+      flex-direction: column;
+      gap: 3px;
+    }
+    .form-field label {
+      font-size: 0.71rem;
+      color: var(--sub);
+      font-weight: 600;
+    }
+    .form-field input, .form-field select {
+      background: var(--panel);
+      border: 1px solid var(--border);
+      color: var(--text);
+      padding: 5px 8px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+    }
+    .status-ok {
+      background: rgba(16, 185, 129, 0.2);
+      color: #34d399;
+      border: 1px solid rgba(16, 185, 129, 0.4);
+      padding: 2px 7px;
+      border-radius: 6px;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+    .status-warn {
+      background: rgba(245, 158, 11, 0.22);
+      color: #fcd34d;
+      border: 1px solid rgba(245, 158, 11, 0.5);
+      padding: 2px 7px;
+      border-radius: 6px;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+    .status-high {
+      background: rgba(239, 68, 68, 0.22);
+      color: #fca5a5;
+      border: 1px solid rgba(239, 68, 68, 0.5);
+      padding: 2px 7px;
+      border-radius: 6px;
+      font-size: 0.7rem;
+      font-weight: 600;
+    }
+    .cell-warn {
+      background: rgba(245, 158, 11, 0.18);
+      color: #fde68a;
+      font-weight: 700;
+    }
+    .cell-high {
+      background: rgba(239, 68, 68, 0.22);
+      color: #fca5a5;
+      font-weight: 700;
+    }
+    .cell-good {
+      color: #34d399;
+      font-weight: 600;
+    }
+    .cat-col {
+      font-weight: 700;
+      color: #cbd5e1;
+      background: rgba(15, 23, 42, 0.85);
+      white-space: nowrap;
+      position: sticky;
+      left: 0;
+      z-index: 2;
+    }
+    .item-col {
+      font-weight: 600;
+      background: rgba(30, 41, 59, 0.95);
+      white-space: nowrap;
+      position: sticky;
+      left: 88px;
+      z-index: 2;
+    }
+    .filter-bar {
+      display: flex;
+      gap: 8px;
+      align-items: center;
+      margin-bottom: 10px;
+      flex-wrap: wrap;
+    }
+    select, input[type="search"] {
+      background: var(--bg);
+      color: var(--text);
+      border: 1px solid var(--border);
+      padding: 6px 10px;
+      border-radius: 6px;
+      font-size: 0.78rem;
+    }
+  </style>
+</head>
+<body>
+
+  <div id="toast-box"></div>
+
+  <!-- Top Header -->
+  <header class="top-bar">
+    <div class="brand">
+      <span style="font-size:1.4rem;">🩺</span>
+      <div>
+        <h1>健康状態 統合管理デスクトップアプリ</h1>
+        <div style="font-size:0.73rem; color:var(--sub);" id="period-range-label">表示期間：直近1か月</div>
+      </div>
+      <span class="badge" id="sync-status-badge">✓ 起動完了</span>
+      <span class="badge-sobriety" id="sobriety-badge">禁酒 72 日目</span>
+      <span class="badge-nosmoking" id="nosmoking-badge">禁煙 15,949 日目</span>
+    </div>
+
+    <div class="controls">
+      <div class="period-group">
+        <button class="period-btn" onclick="changePeriod(7, this)">1週間</button>
+        <button class="period-btn active" onclick="changePeriod(30, this)">1か月</button>
+        <button class="period-btn" onclick="changePeriod(365, this)">1年</button>
+        <button class="period-btn" onclick="changePeriod(9999, this)">全期間</button>
+      </div>
+      <button class="action-btn primary" onclick="syncAllHealthSheets(true)">🔄 今すぐ最新データ取得</button>
+      <button class="action-btn" onclick="toggleSyncPanel()">⚙️ 連動設定</button>
+    </div>
+  </header>
+
+  <main class="container">
+    <!-- Sync Settings Panel -->
+    <section class="sync-panel" id="sync-panel">
+      <div style="display:flex; justify-content:space-between; align-items:center;">
+        <h3 style="margin:0; font-size:0.9rem;">📂 4種Googleスプレッドシート自動同期 設定（初期内蔵済）</h3>
+        <button class="action-btn" onclick="toggleSyncPanel()" style="padding:3px 8px;">✕ 閉じる</button>
+      </div>
+      <div class="sync-grid">
+        <div class="sync-box">
+          <div style="display:grid; grid-template-columns: 110px 1fr; gap:6px; align-items:center; font-size:0.76rem;">
+            <span>① 体組成記録:</span><input type="text" id="url-body">
+            <span>② 栄養記録:</span><input type="text" id="url-nutr">
+            <span>③ 睡眠管理表:</span><input type="text" id="url-sleep">
+            <span>④ 血圧記録:</span><input type="text" id="url-bp">
+          </div>
+          <div style="margin-top:10px; display:flex; gap:8px;">
+            <button class="action-btn primary" onclick="saveHealthUrls()">💾 URLを保存して同期</button>
+            <button class="action-btn" onclick="resetHealthUrls()">初期URLに戻す</button>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 6 KPI Summary Cards -->
+    <section class="kpi-grid">
+      <div class="kpi-card">
+        <div class="kpi-title"><span>期間平均 体重 / BMI</span><span>⚖️</span></div>
+        <div class="kpi-val" id="kpi-weight">53.9 kg</div>
+        <div class="kpi-sub" id="kpi-weight-sub">最新: 53.5 kg / 平均BMI: 21.9</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title"><span>骨格筋量 / 体脂肪率</span><span>💪</span></div>
+        <div class="kpi-val" id="kpi-muscle-fat">23.7 kg / 20.9 %</div>
+        <div class="kpi-sub" id="kpi-inbody-sub">InBody点数 平均: 73 点</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title"><span>平均 カロリー収支 (摂取-消費)</span><span>🔥</span></div>
+        <div class="kpi-val" id="kpi-cal-bal">-664 kcal/日</div>
+        <div class="kpi-sub" id="kpi-cal-sub">摂取: 1543 kcal / 消費: 2207 kcal</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title"><span>平均 タンパク質 / 食物繊維</span><span>🥗</span></div>
+        <div class="kpi-val" id="kpi-prot-fib">90.4 g / 24.4 g</div>
+        <div class="kpi-sub" id="kpi-salt-sub">平均塩分: 3.6 g/日</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title"><span>平均 睡眠時間 (睡眠スコア)</span><span>🌙</span></div>
+        <div class="kpi-val" id="kpi-sleep">6.49 h (75.9点)</div>
+        <div class="kpi-sub" id="kpi-sleep-sub">平均睡眠効率: 90.0 %</div>
+      </div>
+      <div class="kpi-card">
+        <div class="kpi-title"><span>期間平均 血圧 (上/下) ・ 脈拍</span><span>💓</span></div>
+        <div class="kpi-val" id="kpi-bp">113 / 70 mmHg</div>
+        <div class="kpi-sub" id="kpi-bp-sub">平均脈拍: 58 bpm (全測定)</div>
+      </div>
+    </section>
+
+    <!-- Navigation Tabs -->
+    <nav class="nav-tabs">
+      <button class="tab-btn active" onclick="switchTab('dashboard', this)">📊 総合ダッシュボード (6大グラフ)</button>
+      <button class="tab-btn" onclick="switchTab('logs', this)">📋 日次データ一覧・検索</button>
+      <button class="tab-btn" onclick="switchTab('checkup', this)" style="border-color:#10b981; color:#34d399;">🩺 人間ドック・健診・献血分析 (2008〜2026 全19回統合＆マージ)</button>
+    </nav>
+
+    <!-- Tab 1: 総合ダッシュボード (①〜⑥の6大グラフ) -->
+    <div id="tab-dashboard">
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3>① 体組成推移（体重・体脂肪率）</h3>
+            <span style="font-size:0.72rem; color:var(--sub);">※左軸：体重(48kg〜) ／ 右軸：体脂肪率(15%〜)</span>
+          </div>
+          <div class="chart-wrap"><canvas id="chart-body"></canvas></div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3>② 栄養・カロリー収支推移（摂取カロリー・消費カロリー・カロリー収支）</h3>
+          </div>
+          <div class="chart-wrap"><canvas id="chart-cal"></canvas></div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3>③ 主要栄養素・塩分推移（タンパク質・食物繊維・塩分）</h3>
+          </div>
+          <div class="chart-wrap"><canvas id="chart-nutr-detail"></canvas></div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3>④ 睡眠ステージ内訳推移（深い睡眠・レム睡眠・浅い睡眠・覚醒）</h3>
+          </div>
+          <div class="chart-wrap"><canvas id="chart-sleep-stage"></canvas></div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3>⑤ 日次平均 血圧・脈拍推移（最高血圧・最低血圧・脈拍）</h3>
+          </div>
+          <div class="chart-wrap"><canvas id="chart-bp-daily"></canvas></div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3>⑥ 総体重の内訳積み上げ推移（骨格筋量 ＋ 体脂肪量 ＋ その他）</h3>
+            <span style="font-size:0.72rem; color:#34d399;">※目盛り：50kg〜57kg（バー頂点＝総体重 ／ 内部3色＝構成比）</span>
+          </div>
+          <div class="chart-wrap"><canvas id="chart-muscle-bmr"></canvas></div>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 2: 日次データ一覧・検索 -->
+    <div id="tab-logs" style="display:none;">
+      <div class="table-card">
+        <div class="filter-bar">
+          <h3 style="margin:0; margin-right:auto;">📋 日次統合ログ一覧（体組成・栄養・睡眠・血圧）</h3>
+          <input type="search" id="daily-log-search" placeholder="検索 (例: 休肝日, 禁酒, ダブルワーク, 2026-10)..." oninput="renderDailyTable()" style="width:280px;">
+        </div>
+        <div style="max-height: 520px; overflow-y: auto;">
+          <table id="table-daily-logs">
+            <thead>
+              <tr>
+                <th>日付</th>
+                <th>体重 / 体脂肪率</th>
+                <th>筋量 / 体脂肪量 / その他</th>
+                <th>摂取 / 消費 (収支)</th>
+                <th>タンパク / 塩分</th>
+                <th>睡眠時間 (スコア)</th>
+                <th>日平均血圧 (脈拍)</th>
+                <th>備考・メモ</th>
+              </tr>
+            </thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+
+    <!-- Tab 3: 人間ドック・健康診断・献血 18年間経年分析 (連番⑦〜⑩) -->
+    <div id="tab-checkup" style="display:none;">
+      <div class="table-card" style="border-color:#10b981; margin-bottom:14px;">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:10px;">
+          <div>
+            <h3 style="margin:0; color:#34d399;">🩺 人間ドック・特定健診・献血 18年間経年分析（2008年〜2026年 全19回統合）</h3>
+            <p style="margin:3px 0 0 0; font-size:0.76rem; color:var(--sub);" id="checkup-summary-label">
+              献血検査成績（2008〜2014年：9回）＋ 東名厚木サテライト（2012〜2014年：6回）＋ 三思会（2020〜2021年：2回）＋ こいけクリニック（2025〜2026年：2回）＋ 2026年10月現在（日常平均）を完全マージ済。
+            </p>
+          </div>
+          <div style="display:flex; gap:6px; flex-wrap:wrap;">
+            <button class="action-btn primary" onclick="toggleCheckupMergePanel()">➕ 健診・献血結果を追加・マージ</button>
+            <button class="action-btn blue" onclick="exportCheckupCsv()">📥 健診CSV出力</button>
+            <input type="file" id="import-checkup-file" accept=".csv,.json" style="display:none;" onchange="importCheckupDataFile(event)">
+            <button class="action-btn" onclick="document.getElementById('import-checkup-file').click()">📤 CSV/JSONマージ読込</button>
+            <button class="action-btn danger" onclick="resetCheckupToDefault()">🔄 初期19回データに戻す</button>
+          </div>
+        </div>
+      </div>
+
+      <!-- 健診・献血データ追加・マージ用フォーム -->
+      <section class="merge-panel" id="checkup-merge-panel">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px;">
+          <div>
+            <h4 style="margin:0; color:#34d399; font-size:0.92rem;">➕ 健診・人間ドック・献血データの追加 ／ 既存受診日の上書きマージ</h4>
+            <p style="margin:2px 0 0 0; font-size:0.74rem; color:var(--sub);">
+              ※同じ「受診日」を入力すると、既存の項目を消さずに新しく入力した項目だけを上書き統合（マージ）します。
+            </p>
+          </div>
+          <div style="display:flex; gap:6px; align-items:center;">
+            <select id="load-existing-checkup" onchange="loadCheckupToForm(this.value)">
+              <option value="">✏️ 既存データを選択して編集...</option>
+            </select>
+            <button class="action-btn" onclick="clearCheckupForm()">クリア</button>
+            <button class="action-btn" onclick="toggleCheckupMergePanel()">✕ 閉じる</button>
+          </div>
+        </div>
+
+        <div class="form-grid">
+          <div class="form-field"><label>📅 受診・採血日 (必須)</label><input type="date" id="f-date"></div>
+          <div class="form-field"><label>🏥 実施機関・献血種別</label><input type="text" id="f-clinic" placeholder="こいけクリニック / 献血"></div>
+          <div class="form-field"><label>📏 身長 (cm)</label><input type="number" step="0.1" id="f-height" placeholder="158.8"></div>
+          <div class="form-field"><label>⚖️ 体重 (kg)</label><input type="number" step="0.1" id="f-weight" placeholder="53.3"></div>
+          <div class="form-field"><label>📐 腹囲 (cm) [85未満]</label><input type="number" step="0.1" id="f-waist" placeholder="79.5"></div>
+          <div class="form-field"><label>📊 BMI [25未満]</label><input type="number" step="0.1" id="f-bmi" placeholder="21.2"></div>
+          <div class="form-field"><label>📉 体脂肪率 (%)</label><input type="number" step="0.1" id="f-fatpct" placeholder="20.7"></div>
+
+          <div class="form-field"><label>💓 収縮期血圧(上) [130未満]</label><input type="number" id="f-sbp" placeholder="136"></div>
+          <div class="form-field"><label>💓 拡張期血圧(下) [85未満]</label><input type="number" id="f-dbp" placeholder="84"></div>
+          <div class="form-field"><label>💓 脈拍 (bpm)</label><input type="number" id="f-pulse" placeholder="65"></div>
+
+          <div class="form-field"><label>🩸 総コレステロール [219以下]</label><input type="number" id="f-tc" placeholder="229"></div>
+          <div class="form-field"><label>🩸 空腹時中性脂肪 [150未満]</label><input type="number" id="f-tg" placeholder="70"></div>
+          <div class="form-field"><label>🩸 HDLコレステロール [40以上]</label><input type="number" id="f-hdl" placeholder="69"></div>
+          <div class="form-field"><label>🩸 LDLコレステロール [120未満]</label><input type="number" id="f-ldl" placeholder="136"></div>
+          <div class="form-field"><label>🩸 LH比 [1.5以下目安]</label><input type="number" step="0.1" id="f-lh" placeholder="2.0"></div>
+
+          <div class="form-field"><label>🧪 AST (GOT) [31未満]</label><input type="number" id="f-ast" placeholder="28"></div>
+          <div class="form-field"><label>🧪 ALT (GPT) [31未満]</label><input type="number" id="f-alt" placeholder="29"></div>
+          <div class="form-field"><label>🍺 γ-GTP [51未満]</label><input type="number" id="f-ggtp" placeholder="26"></div>
+          <div class="form-field"><label>🧪 総蛋白(TP) / アルブミン(ALB)</label><input type="text" id="f-tpalb" placeholder="6.9 / 4.4"></div>
+
+          <div class="form-field"><label>🍚 空腹時血糖 [100未満]</label><input type="number" id="f-fbg" placeholder="94"></div>
+          <div class="form-field"><label>🍚 HbA1c (%) [5.6未満]</label><input type="number" step="0.1" id="f-hba1c" placeholder="6.1"></div>
+          <div class="form-field"><label>🍚 グリコアルブミン(GA) [16.5未満]</label><input type="number" step="0.1" id="f-ga" placeholder="14.3"></div>
+
+          <div class="form-field"><label>💧 血清クレアチニン</label><input type="number" step="0.01" id="f-cr" placeholder="0.93"></div>
+          <div class="form-field"><label>💧 eGFR [60以上]</label><input type="number" step="0.1" id="f-egfr" placeholder="64.1"></div>
+          <div class="form-field"><label>💧 尿素窒素(BUN) [8〜22]</label><input type="number" step="0.1" id="f-bun" placeholder="20.0"></div>
+          <div class="form-field"><label>🦶 血清尿酸 [3.8〜7.5]</label><input type="number" step="0.1" id="f-ua" placeholder="6.2"></div>
+
+          <div class="form-field"><label>⚪ 白血球数(/μl)</label><input type="number" id="f-wbc" placeholder="5100"></div>
+          <div class="form-field"><label>🔴 赤血球数 [425〜570]</label><input type="number" id="f-rbc" placeholder="449"></div>
+          <div class="form-field"><label>🔴 血色素量(Hb) [13.1以上]</label><input type="number" step="0.1" id="f-hb" placeholder="14.2"></div>
+          <div class="form-field"><label>🔴 ヘマトクリット(%) [39.8〜51.8]</label><input type="number" step="0.1" id="f-ht" placeholder="45.1"></div>
+          <div class="form-field"><label>🔴 血小板数(万/μl)</label><input type="number" step="0.1" id="f-plt" placeholder="27.0"></div>
+
+          <div class="form-field"><label>🫀 CAVI(右/左) / ABI(右/左)</label><input type="text" id="f-cavi" placeholder="CAVI 7.2/7.0, ABI 1.11/1.05"></div>
+          <div class="form-field"><label>🫁 肺活量(mL) / 1秒率(%) / 肺年齢</label><input type="text" id="f-lung" placeholder="3730mL / 76.8% / 57.6歳"></div>
+          <div class="form-field"><label>🚽 尿糖 / 尿蛋白 / 尿潜血</label><input type="text" id="f-urine" placeholder="(-) / (-) / (-)"></div>
+          <div class="form-field"><label>📝 心電図・画像所見・医師判断</label><input type="text" id="f-note" placeholder="I度房室ブロック / 肝のう胞"></div>
+        </div>
+
+        <div style="margin-top:12px; display:flex; gap:8px; justify-content:flex-end;">
+          <button class="action-btn danger" onclick="deleteSelectedCheckup()">🗑️ この受診日を削除</button>
+          <button class="action-btn primary" onclick="saveAndMergeCheckupForm()">💾 この内容で保存・マージする</button>
+        </div>
+      </section>
+
+      <!-- 18年間の経年ハイライトKPI -->
+      <section class="kpi-grid">
+        <div class="kpi-card">
+          <div class="kpi-title"><span>肝機能 γ-GTP (18年間全19回推移)</span><span class="status-ok">半減・正常化</span></div>
+          <div class="kpi-val" style="color:#34d399;">52 → 26 <span style="font-size:0.76rem;">U/L</span></div>
+          <div class="kpi-sub">50代献血・ドック時(14〜25)と同等の健康水準(26)へ完全回復</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title"><span>血圧 (2012献血161/95・2020健診159/102 → 現在)</span><span class="status-ok">劇的改善</span></div>
+          <div class="kpi-val" id="ck-kpi-bp">159/102 → 113/70</div>
+          <div class="kpi-sub">18年間の全測定のなかで現在の家庭血圧(<b>113/70</b>)が最良値</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title"><span>総コレステロール / 中性脂肪 (18年推移)</span><span class="status-ok">中性脂肪 70</span></div>
+          <div class="kpi-val">TC 229 / TG 70</div>
+          <div class="kpi-sub">総コレは2012献血ピーク(256#)→229、中性脂肪は161→<b>70</b>へ改善</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title"><span>糖代謝 (血糖 / HbA1c / 献血GA)</span><span class="status-warn">HbA1c 6.1%</span></div>
+          <div class="kpi-val">94 <span style="font-size:0.75rem;">mg/dl</span> / 6.1<span style="font-size:0.75rem;">%</span></div>
+          <div class="kpi-sub">献血グリコアルブミン(GA)は13.1〜14.4%(基準16.5未満)で一貫安定</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title"><span>腎機能・尿酸・尿潜血 (2026/09最新)</span><span class="status-ok">潜血陰性化</span></div>
+          <div class="kpi-val">Cr 0.93 / 尿酸 6.2</div>
+          <div class="kpi-sub">2025/11に(±)だった<b>尿潜血が(-)へ改善</b>。eGFR 64.1</div>
+        </div>
+        <div class="kpi-card">
+          <div class="kpi-title"><span>血液一般・栄養状態 (TP / ALB / Hb)</span><span class="status-ok">18年間安定</span></div>
+          <div class="kpi-val">Hb 14.2 / ALB 4.4</div>
+          <div class="kpi-sub">2008年(51歳)から赤血球・ヘモグロビン・アルブミンとも高水準維持</div>
+        </div>
+      </section>
+
+      <!-- 健診・献血 経年変化グラフ（連番⑦〜⑩） -->
+      <div class="charts-grid">
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3>⑦ 血圧 18年間の経年推移（2012年〜2025年 献血・ドック・健診 ＋ 2026現在）</h3>
+            <span style="font-size:0.72rem; color:#34d399;">※献血時血圧(2012〜2014)とドック・健診血圧の全推移</span>
+          </div>
+          <div class="chart-wrap"><canvas id="chart-ck-bp"></canvas></div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3>⑧ 血中脂質 18年間の経年推移（総コレステロール[献血・ドック] / LDL / HDL / 中性脂肪）</h3>
+            <span style="font-size:0.72rem; color:#34d399;">※2008年(H20)からの総コレステロール・脂質19回推移</span>
+          </div>
+          <div class="chart-wrap"><canvas id="chart-ck-lipid"></canvas></div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3>⑨ 糖代謝 18年間の経年推移（空腹時血糖 ＆ HbA1c / グリコアルブミンGA）</h3>
+            <span style="font-size:0.72rem; color:var(--sub);">※ドック・健診の血糖・HbA1cと献血時のGA(%)推移</span>
+          </div>
+          <div class="chart-wrap"><canvas id="chart-ck-glucose"></canvas></div>
+        </div>
+
+        <div class="chart-card">
+          <div class="chart-header">
+            <h3>⑩ 肝機能 18年間の経年推移（AST / ALT / γ-GTP：2008年〜2026年 全19回）</h3>
+            <span style="font-size:0.72rem; color:#34d399;">※献血9回＋ドック・健診10回のALT・γ-GTP完全推移</span>
+          </div>
+          <div class="chart-wrap"><canvas id="chart-ck-liver"></canvas></div>
+        </div>
+      </div>
+
+      <!-- 全項目 経年比較マトリクス表 -->
+      <div class="table-card">
+        <div style="display:flex; justify-content:space-between; align-items:center; flex-wrap:wrap; gap:8px; margin-bottom:10px;">
+          <h3 style="margin:0;">📋 人間ドック・特定健診・献血 18年間マトリクス比較表（全19回＋現在値）</h3>
+          <div style="display:flex; gap:10px; font-size:0.74rem;">
+            <span><span class="status-ok">緑文字</span> 基準値内</span>
+            <span><span class="status-warn">黄背景</span> 保健指導・要注意域</span>
+            <span><span class="status-high">赤背景(H/#)</span> 受診勧奨判定値</span>
+          </div>
+        </div>
+        <div style="overflow-x:auto;">
+          <table id="checkup-matrix-table">
+            <thead></thead>
+            <tbody></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </main>
+
+  <script>
+    function safeGetStorage(key) {
+      try { return localStorage.getItem(key); } catch (e) { return null; }
+    }
+    function safeSetStorage(key, val) {
+      try { localStorage.setItem(key, val); } catch (e) {}
+    }
+    function safeRemoveStorage(key) {
+      try { localStorage.removeItem(key); } catch (e) {}
+    }
+
+    const DEFAULT_HEALTH_URLS = {
+      body:  "https://docs.google.com/spreadsheets/d/1FSdAN6fJL7TKezFrrXfEXRooWL7Nn6Uxyh-XY84zos4/edit?usp=sharing",
+      nutr:  "https://docs.google.com/spreadsheets/d/1-jqSufnOqJ5L3-yOEwYS3iy3arMS9M9vCQDBY9fHICQ/edit?usp=sharing",
+      sleep: "https://docs.google.com/spreadsheets/d/1QqxP-JhUShpvAvaH6jz2FuJwWCBfjsGk2A1DHD5ch8A/edit?usp=sharing",
+      bp:    "https://docs.google.com/spreadsheets/d/1UUvwFxdH1cMl73RX8qwotPRKyMh-0pkN6jDAeS0ajDw/edit?usp=sharing"
+    };
+
+    const FALLBACK_DAILY_DATA = [
+      { date: "2026-09-25", weight: 55.2, muscle: 24.0, fatMass: 11.9, fatPct: 21.6, bmr: 1305, inbodyScore: 73, bmi: 22.4, waist: 78.7, calIn: 1580, calOut: 2210, calBal: -630, prot: 92.0, fiber: 23.5, salt: 3.8, sleepH: 6.45, sleepScore: 76, sleepEff: 91, deepH: 0.95, remH: 1.45, lightH: 4.05, awakeH: 0.45, sbp: 115, dbp: 72, pulse: 56, memo: "金曜朝InBody/バイタル統合" },
+      { date: "2026-09-26", weight: 55.2, muscle: 24.1, fatMass: 11.8, fatPct: 21.3, bmr: 1307, inbodyScore: 74, bmi: 22.4, waist: 78.1, calIn: 1620, calOut: 2350, calBal: -730, prot: 88.5, fiber: 24.0, salt: 3.6, sleepH: 6.60, sleepScore: 77, sleepEff: 90, deepH: 1.02, remH: 1.50, lightH: 4.08, awakeH: 0.50, sbp: 114, dbp: 71, pulse: 57, memo: "土曜朝InBody/バイタル統合" },
+      { date: "2026-09-27", weight: 54.7, muscle: 23.8, fatMass: 11.8, fatPct: 21.6, bmr: 1297, inbodyScore: 73, bmi: 22.2, waist: 78.9, calIn: 1550, calOut: 2320, calBal: -770, prot: 91.0, fiber: 25.1, salt: 3.5, sleepH: 6.30, sleepScore: 75, sleepEff: 89, deepH: 0.90, remH: 1.40, lightH: 4.00, awakeH: 0.55, sbp: 116, dbp: 72, pulse: 59, memo: "日曜朝InBody/バイタル統合" },
+      { date: "2026-09-28", weight: 54.5, muscle: 23.7, fatMass: 11.8, fatPct: 21.6, bmr: 1292, inbodyScore: 73, bmi: 22.1, waist: 78.4, calIn: 1510, calOut: 2180, calBal: -670, prot: 89.2, fiber: 24.2, salt: 3.7, sleepH: 6.50, sleepScore: 76, sleepEff: 90, deepH: 0.98, remH: 1.42, lightH: 4.10, awakeH: 0.42, sbp: 113, dbp: 70, pulse: 58, memo: "月曜朝InBody/バイタル統合" },
+      { date: "2026-09-29", weight: 54.5, muscle: 24.0, fatMass: 11.3, fatPct: 20.7, bmr: 1303, inbodyScore: 74, bmi: 22.1, waist: 78.4, calIn: 1540, calOut: 2050, calBal: -510, prot: 94.0, fiber: 25.0, salt: 3.6, sleepH: 6.80, sleepScore: 78, sleepEff: 92, deepH: 1.05, remH: 1.55, lightH: 4.20, awakeH: 0.38, sbp: 112, dbp: 69, pulse: 59, memo: "火曜朝InBody/バイタル統合" },
+      { date: "2026-09-30", weight: 54.8, muscle: 23.8, fatMass: 11.7, fatPct: 21.4, bmr: 1301, inbodyScore: 73, bmi: 22.2, waist: 78.5, calIn: 1560, calOut: 2190, calBal: -630, prot: 90.5, fiber: 24.6, salt: 3.5, sleepH: 6.40, sleepScore: 75, sleepEff: 90, deepH: 0.92, remH: 1.40, lightH: 4.08, awakeH: 0.45, sbp: 114, dbp: 70, pulse: 58, memo: "水曜朝InBody/バイタル統合" },
+      { date: "2026-10-01", weight: 54.5, muscle: 23.9, fatMass: 11.3, fatPct: 20.7, bmr: 1303, inbodyScore: 74, bmi: 22.1, waist: 78.5, calIn: 1490, calOut: 2260, calBal: -770, prot: 88.0, fiber: 23.8, salt: 3.4, sleepH: 6.25, sleepScore: 74, sleepEff: 89, deepH: 0.88, remH: 1.35, lightH: 4.02, awakeH: 0.48, sbp: 115, dbp: 71, pulse: 60, memo: "木曜朝InBody/バイタル統合" },
+      { date: "2026-10-02", weight: 54.5, muscle: 23.9, fatMass: 11.3, fatPct: 20.8, bmr: 1303, inbodyScore: 74, bmi: 22.1, waist: 79.1, calIn: 1570, calOut: 2100, calBal: -530, prot: 93.5, fiber: 25.4, salt: 3.7, sleepH: 6.75, sleepScore: 78, sleepEff: 91, deepH: 1.08, remH: 1.52, lightH: 4.15, awakeH: 0.40, sbp: 112, dbp: 69, pulse: 58, memo: "金曜朝InBody/バイタル統合" },
+      { date: "2026-10-03", weight: 54.5, muscle: 23.7, fatMass: 11.6, fatPct: 21.3, bmr: 1297, inbodyScore: 73, bmi: 22.1, waist: 78.8, calIn: 1610, calOut: 2380, calBal: -770, prot: 89.0, fiber: 24.1, salt: 3.6, sleepH: 6.55, sleepScore: 76, sleepEff: 90, deepH: 0.96, remH: 1.44, lightH: 4.15, awakeH: 0.44, sbp: 113, dbp: 70, pulse: 57, memo: "土曜朝InBody/バイタル統合" },
+      { date: "2026-10-04", weight: 54.1, muscle: 23.4, fatMass: 11.7, fatPct: 21.7, bmr: 1286, inbodyScore: 73, bmi: 21.9, waist: 78.2, calIn: 1520, calOut: 2340, calBal: -820, prot: 87.5, fiber: 23.9, salt: 3.5, sleepH: 6.35, sleepScore: 74, sleepEff: 89, deepH: 0.90, remH: 1.38, lightH: 4.07, awakeH: 0.50, sbp: 114, dbp: 71, pulse: 57, memo: "日曜朝InBody/バイタル統合" },
+      { date: "2026-10-05", weight: 53.7, muscle: 23.4, fatMass: 11.5, fatPct: 21.5, bmr: 1282, inbodyScore: 73, bmi: 21.8, waist: 77.8, calIn: 1480, calOut: 2190, calBal: -710, prot: 90.2, fiber: 24.5, salt: 3.4, sleepH: 6.45, sleepScore: 75, sleepEff: 90, deepH: 0.94, remH: 1.41, lightH: 4.10, awakeH: 0.42, sbp: 112, dbp: 70, pulse: 59, memo: "月曜朝InBody/バイタル統合" },
+      { date: "2026-10-06", weight: 53.7, muscle: 23.3, fatMass: 11.6, fatPct: 21.6, bmr: 1279, inbodyScore: 72, bmi: 21.8, waist: 77.5, calIn: 1530, calOut: 2060, calBal: -530, prot: 92.8, fiber: 25.2, salt: 3.6, sleepH: 6.70, sleepScore: 77, sleepEff: 91, deepH: 1.04, remH: 1.50, lightH: 4.16, awakeH: 0.39, sbp: 111, dbp: 69, pulse: 59, memo: "火曜朝InBody/バイタル統合" },
+      { date: "2026-10-07", weight: 54.2, muscle: 24.0, fatMass: 10.9, fatPct: 20.1, bmr: 1305, inbodyScore: 74, bmi: 22.0, waist: 77.2, calIn: 1560, calOut: 2180, calBal: -620, prot: 91.5, fiber: 24.8, salt: 3.7, sleepH: 6.50, sleepScore: 76, sleepEff: 90, deepH: 0.98, remH: 1.46, lightH: 4.06, awakeH: 0.44, sbp: 113, dbp: 70, pulse: 60, memo: "水曜午前InBody/バイタル統合" },
+      { date: "2026-10-08", weight: 54.1, muscle: 23.7, fatMass: 11.2, fatPct: 20.7, bmr: 1297, inbodyScore: 74, bmi: 21.9, waist: 76.6, calIn: 1500, calOut: 2270, calBal: -770, prot: 89.4, fiber: 24.0, salt: 3.5, sleepH: 6.30, sleepScore: 75, sleepEff: 89, deepH: 0.91, remH: 1.39, lightH: 4.00, awakeH: 0.47, sbp: 114, dbp: 71, pulse: 58, memo: "木曜朝InBody/バイタル統合" },
+      { date: "2026-10-09", weight: 54.2, muscle: 23.6, fatMass: 11.5, fatPct: 21.3, bmr: 1292, inbodyScore: 73, bmi: 22.0, waist: 76.8, calIn: 1550, calOut: 2090, calBal: -540, prot: 93.0, fiber: 25.0, salt: 3.6, sleepH: 6.85, sleepScore: 79, sleepEff: 92, deepH: 1.10, remH: 1.55, lightH: 4.20, awakeH: 0.36, sbp: 111, dbp: 68, pulse: 58, memo: "金曜朝InBody/バイタル統合" },
+      { date: "2026-10-10", weight: 54.5, muscle: 23.7, fatMass: 11.6, fatPct: 21.3, bmr: 1297, inbodyScore: 73, bmi: 22.1, waist: 77.0, calIn: 1590, calOut: 2360, calBal: -770, prot: 88.8, fiber: 24.3, salt: 3.7, sleepH: 6.40, sleepScore: 75, sleepEff: 90, deepH: 0.95, remH: 1.42, lightH: 4.03, awakeH: 0.45, sbp: 113, dbp: 70, pulse: 57, memo: "土曜朝InBody/バイタル統合" },
+      { date: "2026-10-11", weight: 53.8, muscle: 23.5, fatMass: 11.4, fatPct: 21.1, bmr: 1286, inbodyScore: 73, bmi: 21.8, waist: 77.0, calIn: 1520, calOut: 2330, calBal: -810, prot: 89.5, fiber: 24.1, salt: 3.5, sleepH: 6.35, sleepScore: 74, sleepEff: 89, deepH: 0.92, remH: 1.38, lightH: 4.05, awakeH: 0.48, sbp: 114, dbp: 70, pulse: 58, memo: "日曜朝InBody/バイタル統合" },
+      { date: "2026-10-12", weight: 53.7, muscle: 23.4, fatMass: 11.3, fatPct: 21.1, bmr: 1286, inbodyScore: 73, bmi: 21.8, waist: 77.0, calIn: 1490, calOut: 2170, calBal: -680, prot: 90.0, fiber: 24.4, salt: 3.4, sleepH: 6.55, sleepScore: 76, sleepEff: 91, deepH: 0.99, remH: 1.46, lightH: 4.10, awakeH: 0.40, sbp: 112, dbp: 69, pulse: 56, memo: "月曜朝InBody/バイタル統合" },
+      { date: "2026-10-13", weight: 53.8, muscle: 23.4, fatMass: 11.4, fatPct: 21.2, bmr: 1286, inbodyScore: 73, bmi: 21.8, waist: 77.0, calIn: 1540, calOut: 2050, calBal: -510, prot: 92.5, fiber: 25.1, salt: 3.6, sleepH: 6.70, sleepScore: 77, sleepEff: 91, deepH: 1.03, remH: 1.49, lightH: 4.18, awakeH: 0.39, sbp: 111, dbp: 68, pulse: 58, memo: "火曜朝InBody/バイタル統合" },
+      { date: "2026-10-14", weight: 54.0, muscle: 23.9, fatMass: 10.8, fatPct: 20.0, bmr: 1303, inbodyScore: 74, bmi: 21.9, waist: 77.0, calIn: 1560, calOut: 2190, calBal: -630, prot: 91.2, fiber: 24.7, salt: 3.6, sleepH: 6.45, sleepScore: 76, sleepEff: 90, deepH: 0.97, remH: 1.44, lightH: 4.04, awakeH: 0.43, sbp: 113, dbp: 70, pulse: 58, memo: "水曜朝InBody/バイタル統合" },
+      { date: "2026-10-15", weight: 53.6, muscle: 23.7, fatMass: 10.7, fatPct: 20.0, bmr: 1297, inbodyScore: 74, bmi: 21.7, waist: 77.0, calIn: 1510, calOut: 2260, calBal: -750, prot: 89.8, fiber: 24.2, salt: 3.5, sleepH: 6.30, sleepScore: 75, sleepEff: 89, deepH: 0.90, remH: 1.40, lightH: 4.00, awakeH: 0.46, sbp: 114, dbp: 71, pulse: 59, memo: "木曜朝InBody/バイタル統合" },
+      { date: "2026-10-16", weight: 53.9, muscle: 23.6, fatMass: 11.2, fatPct: 20.8, bmr: 1292, inbodyScore: 73, bmi: 21.8, waist: 77.0, calIn: 1550, calOut: 2080, calBal: -530, prot: 93.2, fiber: 25.3, salt: 3.6, sleepH: 6.80, sleepScore: 78, sleepEff: 92, deepH: 1.06, remH: 1.52, lightH: 4.22, awakeH: 0.37, sbp: 111, dbp: 69, pulse: 55, memo: "金曜朝InBody/バイタル統合" },
+      { date: "2026-10-17", weight: 54.1, muscle: 23.8, fatMass: 11.0, fatPct: 20.4, bmr: 1301, inbodyScore: 74, bmi: 21.9, waist: 77.0, calIn: 1600, calOut: 2370, calBal: -770, prot: 90.1, fiber: 24.5, salt: 3.7, sleepH: 6.50, sleepScore: 76, sleepEff: 90, deepH: 0.96, remH: 1.45, lightH: 4.09, awakeH: 0.44, sbp: 113, dbp: 70, pulse: 58, memo: "土曜朝InBody/バイタル統合" },
+      { date: "2026-10-18", weight: 53.5, muscle: 23.6, fatMass: 11.0, fatPct: 20.5, bmr: 1288, inbodyScore: 73, bmi: 21.7, waist: 77.0, calIn: 1530, calOut: 2340, calBal: -810, prot: 89.6, fiber: 24.3, salt: 3.5, sleepH: 6.40, sleepScore: 75, sleepEff: 90, deepH: 0.94, remH: 1.42, lightH: 4.04, awakeH: 0.45, sbp: 112, dbp: 69, pulse: 57, memo: "日曜朝InBody/バイタル統合" }
+    ];
+
+    const INITIAL_CHECKUP_DATA = [
+      {
+        date: "2008-09-28",
+        clinic: "献血 (血漿・H20.9.28)",
+        age: 51,
+        height: null, weight: null, stdWeight: null, waist: null, bmi: null, fatPct: null,
+        sbp: null, dbp: null, pulse: null,
+        tc: 220, tg: null, hdl: null, ldl: null, lh: null,
+        ast: null, alt: 14, ggtp: 22, alp: null, ldh: null,
+        tp: 7.2, alb: 4.7, ag: 1.9,
+        fbg: null, hba1c: null, ga: null,
+        uSugar: null, uProtein: null, uBlood: null,
+        wbc: 3900, rbc: 471, hb: 14.6, ht: 43.6, mcv: 92.6, mch: 31.0, mchc: 33.5, plt: 29.4,
+        cr: null, egfr: null, bun: null, ua: null,
+        cavi: null, lung: null, ecg: null, imaging: null,
+        judgment: "献血(血漿)：肝機能・血球すべて基準内、総コレ220"
+      },
+      {
+        date: "2012-02-26",
+        clinic: "献血 (血漿・H24.2.26)",
+        age: 55,
+        height: null, weight: null, stdWeight: null, waist: null, bmi: null, fatPct: null,
+        sbp: 161, dbp: 95, pulse: 70,
+        tc: 256, tg: null, hdl: null, ldl: null, lh: null,
+        ast: null, alt: 23, ggtp: 25, alp: null, ldh: null,
+        tp: 7.1, alb: 4.6, ag: 1.9,
+        fbg: null, hba1c: null, ga: 13.1,
+        uSugar: null, uProtein: null, uBlood: null,
+        wbc: 4500, rbc: 464, hb: 14.2, ht: 43.5, mcv: 93.8, mch: 30.6, mchc: 32.6, plt: 26.7,
+        cr: null, egfr: null, bun: null, ua: null,
+        cavi: null, lung: null, ecg: null, imaging: null,
+        judgment: "献血(血漿)：コレステロール256(#印)、献血時血圧161/95、GA 13.1%"
+      },
+      {
+        date: "2012-03-25",
+        clinic: "献血 (血漿・H24.3.25)",
+        age: 55,
+        height: null, weight: null, stdWeight: null, waist: null, bmi: null, fatPct: null,
+        sbp: 127, dbp: 77, pulse: 75,
+        tc: 216, tg: null, hdl: null, ldl: null, lh: null,
+        ast: null, alt: 24, ggtp: 22, alp: null, ldh: null,
+        tp: 7.0, alb: 4.4, ag: 1.7,
+        fbg: null, hba1c: null, ga: 13.5,
+        uSugar: null, uProtein: null, uBlood: null,
+        wbc: 4200, rbc: 447, hb: 13.8, ht: 42.1, mcv: 94.2, mch: 30.9, mchc: 32.8, plt: 29.7,
+        cr: null, egfr: null, bun: null, ua: null,
+        cavi: null, lung: null, ecg: null, imaging: null,
+        judgment: "献血(血漿)：血圧127/77・総コレ216・GA 13.5%（全項目基準内）"
+      },
+      {
+        date: "2012-04-08",
+        clinic: "献血 (血漿・H24.4.8)",
+        age: 55,
+        height: null, weight: null, stdWeight: null, waist: null, bmi: null, fatPct: null,
+        sbp: 127, dbp: 85, pulse: 96,
+        tc: 206, tg: null, hdl: null, ldl: null, lh: null,
+        ast: null, alt: 19, ggtp: 18, alp: null, ldh: null,
+        tp: 6.6, alb: 4.3, ag: 1.8,
+        fbg: null, hba1c: null, ga: 13.6,
+        uSugar: null, uProtein: null, uBlood: null,
+        wbc: 4200, rbc: 459, hb: 14.0, ht: 43.0, mcv: 93.7, mch: 30.5, mchc: 32.6, plt: 27.8,
+        cr: null, egfr: null, bun: null, ua: null,
+        cavi: null, lung: null, ecg: null, imaging: null,
+        judgment: "献血(血漿)：総コレ206・ALT19・γ-GTP18・GA 13.6%（全項目基準内）"
+      },
+      {
+        date: "2012-05-09",
+        clinic: "東名厚木サテライト(前回列)",
+        age: 55,
+        height: null, weight: null, stdWeight: null, waist: null, bmi: null, fatPct: null,
+        sbp: 128, dbp: 80, pulse: null,
+        tc: null, tg: 155, hdl: 72, ldl: 110, lh: 1.5,
+        ast: 19, alt: 15, ggtp: 19, alp: null, ldh: null,
+        tp: null, alb: null, ag: null,
+        fbg: 98, hba1c: 5.6, ga: null,
+        uSugar: "(-)", uProtein: "(-)", uBlood: null,
+        wbc: null, rbc: 448, hb: 13.8, ht: null, mcv: null, mch: null, mchc: null, plt: null,
+        cr: null, egfr: null, bun: null, ua: null,
+        cavi: null, lung: null,
+        ecg: "I度房室ブロック(0.22sec≦PQ)",
+        imaging: "胸部X線:異常なし",
+        judgment: "中性脂肪軽度高値(155)"
+      },
+      {
+        date: "2012-06-18",
+        clinic: "東名厚木サテライト(ドック)",
+        age: 55,
+        height: 158.2, weight: 51.4, stdWeight: 55.1, waist: null, bmi: 20.5, fatPct: null,
+        sbp: 141, dbp: 94, pulse: null,
+        tc: 230, tg: 89, hdl: 80, ldl: 139, lh: 1.7,
+        ast: 17, alt: 16, ggtp: 20, alp: 130, ldh: 170,
+        tp: 7.1, alb: 4.6, ag: 1.84,
+        fbg: 102, hba1c: 5.6, ga: null,
+        uSugar: "(-)", uProtein: "(-)", uBlood: "(-)",
+        wbc: 3700, rbc: 450, hb: 14.2, ht: 43.1, mcv: 96.0, mch: 31.5, mchc: 32.9, plt: 22.7,
+        cr: 0.68, egfr: null, bun: 10, ua: 6.0,
+        cavi: "CAVI 右7.4/左7.2 (50代前半相当), ABI 右1.10/左1.11",
+        lung: "肺活量3750mL(%肺活量110.4%) / 1秒率74.1% / 肺年齢56.3歳",
+        ecg: "I度房室ブロック(0.22sec≦PQ)",
+        imaging: "胃X線:胃底部隆起・胃ポリープ・食道憩室(疑) / エコー:副脾 / 便潜血(-)",
+        judgment: "メタボ非該当 / [C6]軽症高血圧 / [C3]総コレ高値(230)"
+      },
+      {
+        date: "2012-11-21",
+        clinic: "東名厚木サテライト(前回列)",
+        age: 55,
+        height: 159.1, weight: 54.4, stdWeight: 55.7, waist: 71.0, bmi: 21.5, fatPct: null,
+        sbp: 153, dbp: 96, pulse: null,
+        tc: null, tg: 161, hdl: 80, ldl: 132, lh: 1.7,
+        ast: 22, alt: 21, ggtp: 21, alp: null, ldh: null,
+        tp: null, alb: null, ag: null,
+        fbg: 98, hba1c: 5.4, ga: null,
+        uSugar: "(-)", uProtein: "(-)", uBlood: null,
+        wbc: null, rbc: 452, hb: 14.2, ht: null, mcv: null, mch: null, mchc: null, plt: null,
+        cr: null, egfr: null, bun: null, ua: null,
+        cavi: null, lung: null,
+        ecg: "左室肥大(疑)・I度房室ブロック",
+        imaging: "胸部X線:異常なし",
+        judgment: "血圧高値(153/96)・中性脂肪高値(161)"
+      },
+      {
+        date: "2013-03-25",
+        clinic: "東名厚木サテライト(ドック)",
+        age: 56,
+        height: 158.7, weight: 50.1, stdWeight: 55.4, waist: 74.5, bmi: 19.9, fatPct: 16.4,
+        sbp: 148, dbp: 90, pulse: null,
+        tc: 238, tg: 84, hdl: 89, ldl: 142, lh: 1.6,
+        ast: 16, alt: 11, ggtp: 17, alp: 134, ldh: 154,
+        tp: 6.8, alb: 4.4, ag: 1.80,
+        fbg: 95, hba1c: 5.6, ga: null,
+        uSugar: "(-)", uProtein: "(-)", uBlood: "(-)",
+        wbc: 3710, rbc: 463, hb: 14.7, ht: 42.7, mcv: 92.0, mch: 31.7, mchc: 34.4, plt: 24.3,
+        cr: 0.83, egfr: null, bun: 16, ua: 6.2,
+        cavi: "CAVI 右7.2/左7.2 (正常範囲)",
+        lung: "肺活量3620mL(%肺活量106.8%) / 1秒率82.0% / 肺年齢51.3歳",
+        ecg: "I度房室ブロック(0.22sec≦PQ)",
+        imaging: "胃X線:異常なし / エコー:胆のうポリープ(<5mm)・肝のう胞・副脾 / 眼底:H1S0",
+        judgment: "メタボ非該当 / [C6]軽症高血圧 / [C3]脂質(TC238,LDL142)"
+      },
+      {
+        date: "2014-01-30",
+        clinic: "東名厚木サテライト(前回列)",
+        age: 57,
+        height: 159.1, weight: 56.8, stdWeight: 55.7, waist: 72.6, bmi: 22.4, fatPct: null,
+        sbp: 139, dbp: 96, pulse: null,
+        tc: null, tg: 115, hdl: 73, ldl: 139, lh: 1.9,
+        ast: 21, alt: 15, ggtp: 18, alp: null, ldh: null,
+        tp: null, alb: null, ag: null,
+        fbg: 95, hba1c: 5.8, ga: null,
+        uSugar: "(-)", uProtein: "(-)", uBlood: null,
+        wbc: null, rbc: 459, hb: 14.1, ht: null, mcv: null, mch: null, mchc: null, plt: null,
+        cr: null, egfr: null, bun: null, ua: null,
+        cavi: null, lung: null,
+        ecg: "I度房室ブロック・非特異的ST上昇",
+        imaging: "胸部X線:異常なし",
+        judgment: "拡張期血圧高値(139/96)"
+      },
+      {
+        date: "2014-03-17",
+        clinic: "東名厚木サテライト(ドック)",
+        age: 57,
+        height: 158.6, weight: 56.3, stdWeight: 55.3, waist: 75.2, bmi: 22.4, fatPct: 21.8,
+        sbp: 138, dbp: 91, pulse: null,
+        tc: 238, tg: 66, hdl: 84, ldl: 142, lh: 1.7,
+        ast: 14, alt: 10, ggtp: 15, alp: 122, ldh: 143,
+        tp: 6.7, alb: 4.4, ag: 1.90,
+        fbg: 97, hba1c: 5.7, ga: null,
+        uSugar: "(-)", uProtein: "(-)", uBlood: "(-)",
+        wbc: 4490, rbc: 471, hb: 14.5, ht: 44.3, mcv: 94.0, mch: 30.8, mchc: 32.7, plt: 26.2,
+        cr: 0.86, egfr: 71.7, bun: 16, ua: 6.3,
+        cavi: "CAVI 右7.2/左7.0 (40代後半相当), ABI 右1.11/左1.05",
+        lung: "肺活量3730mL(%肺活量110.7%) / 1秒率76.8% / 肺年齢57.6歳",
+        ecg: "I度房室ブロック(0.22sec≦PQ)",
+        imaging: "胃X線:十二指腸球部変形・潰瘍瘢痕 / エコー:肝のう胞・副脾 / 眼底:H0S0[A]",
+        judgment: "メタボ非該当 / [C6]軽症高血圧 / [C12]LDL142・TC238"
+      },
+      {
+        date: "2014-04-06",
+        clinic: "献血 (400mL・H26.4.6)",
+        age: 57,
+        height: null, weight: null, stdWeight: null, waist: null, bmi: null, fatPct: null,
+        sbp: 141, dbp: 82, pulse: 83,
+        tc: 225, tg: null, hdl: null, ldl: null, lh: null,
+        ast: null, alt: 12, ggtp: 14, alp: null, ldh: null,
+        tp: 6.9, alb: 4.4, ag: 1.8,
+        fbg: null, hba1c: null, ga: 13.8,
+        uSugar: null, uProtein: null, uBlood: null,
+        wbc: 3900, rbc: 458, hb: 14.4, ht: 42.0, mcv: 91.7, mch: 31.4, mchc: 34.3, plt: 30.4,
+        cr: null, egfr: null, bun: null, ua: null,
+        cavi: null, lung: null, ecg: null, imaging: null,
+        judgment: "献血(400mL)：ALT12・γ-GTP14・総コレ225・GA 13.8%"
+      },
+      {
+        date: "2014-06-08",
+        clinic: "献血 (血小板・H26.6.8)",
+        age: 57,
+        height: null, weight: null, stdWeight: null, waist: null, bmi: null, fatPct: null,
+        sbp: 118, dbp: 68, pulse: 86,
+        tc: 200, tg: null, hdl: null, ldl: null, lh: null,
+        ast: null, alt: 15, ggtp: 14, alp: null, ldh: null,
+        tp: 6.6, alb: 4.3, ag: 1.9,
+        fbg: null, hba1c: null, ga: 14.4,
+        uSugar: null, uProtein: null, uBlood: null,
+        wbc: 5600, rbc: 445, hb: 13.8, ht: 40.2, mcv: 90.3, mch: 31.0, mchc: 34.3, plt: 30.9,
+        cr: null, egfr: null, bun: null, ua: null,
+        cavi: null, lung: null, ecg: null, imaging: null,
+        judgment: "献血(血小板)：血圧118/68・総コレ200・ALT15・γ-GTP14（全項目基準内）"
+      },
+      {
+        date: "2014-06-29",
+        clinic: "献血 (血小板・H26.6.29)",
+        age: 57,
+        height: null, weight: null, stdWeight: null, waist: null, bmi: null, fatPct: null,
+        sbp: 121, dbp: 71, pulse: 79,
+        tc: 218, tg: null, hdl: null, ldl: null, lh: null,
+        ast: null, alt: 16, ggtp: 15, alp: null, ldh: null,
+        tp: 6.6, alb: 4.4, ag: 2.0,
+        fbg: null, hba1c: null, ga: 14.1,
+        uSugar: null, uProtein: null, uBlood: null,
+        wbc: 4500, rbc: 451, hb: 13.9, ht: 40.6, mcv: 90.0, mch: 30.8, mchc: 34.2, plt: 28.3,
+        cr: null, egfr: null, bun: null, ua: null,
+        cavi: null, lung: null, ecg: null, imaging: null,
+        judgment: "献血(血小板)：血圧121/71・総コレ218・ALT16・γ-GTP15（全項目基準内）"
+      },
+      {
+        date: "2014-08-10",
+        clinic: "献血 (血漿・H26.8.10)",
+        age: 57,
+        height: null, weight: null, stdWeight: null, waist: null, bmi: null, fatPct: null,
+        sbp: 112, dbp: 71, pulse: 60,
+        tc: 198, tg: null, hdl: null, ldl: null, lh: null,
+        ast: null, alt: 15, ggtp: 17, alp: null, ldh: null,
+        tp: 6.9, alb: 4.4, ag: 1.8,
+        fbg: null, hba1c: null, ga: 14.4,
+        uSugar: null, uProtein: null, uBlood: null,
+        wbc: 3300, rbc: 429, hb: 13.1, ht: 38.3, mcv: 89.3, mch: 30.5, mchc: 34.2, plt: 29.0,
+        cr: null, egfr: null, bun: null, ua: null,
+        cavi: null, lung: null, ecg: null, imaging: null,
+        judgment: "献血(血漿)：血圧112/71(脈拍60)・総コレ198・ALT15・γ-GTP17"
+      },
+      {
+        date: "2014-08-24",
+        clinic: "献血 (血小板・H26.8.24)",
+        age: 57,
+        height: null, weight: null, stdWeight: null, waist: null, bmi: null, fatPct: null,
+        sbp: 133, dbp: 82, pulse: 65,
+        tc: 230, tg: null, hdl: null, ldl: null, lh: null,
+        ast: null, alt: 13, ggtp: 18, alp: null, ldh: null,
+        tp: 7.2, alb: 4.7, ag: 1.9,
+        fbg: null, hba1c: null, ga: 14.3,
+        uSugar: null, uProtein: null, uBlood: null,
+        wbc: 3500, rbc: 448, hb: 13.7, ht: 39.7, mcv: 88.6, mch: 30.6, mchc: 34.5, plt: 26.9,
+        cr: null, egfr: null, bun: null, ua: null,
+        cavi: null, lung: null, ecg: null, imaging: null,
+        judgment: "献血(血小板)：血圧133/82・総コレ230・ALT13・γ-GTP18・GA 14.3%"
+      },
+      {
+        date: "2020-09-16",
+        clinic: "社会医療法人社団 三思会",
+        age: 63,
+        height: null, weight: null, stdWeight: null, waist: null, bmi: null, fatPct: null,
+        sbp: 159, dbp: 102, pulse: null,
+        tc: null, tg: 124, hdl: 72, ldl: 139, lh: 1.9,
+        ast: 25, alt: 23, ggtp: 27, alp: null, ldh: null,
+        tp: null, alb: null, ag: null,
+        fbg: 105, hba1c: 5.7, ga: null,
+        uSugar: "(-)", uProtein: "(-)", uBlood: null,
+        wbc: null, rbc: null, hb: null, ht: null, mcv: null, mch: null, mchc: null, plt: null,
+        cr: null, egfr: null, bun: null, ua: null,
+        cavi: null, lung: null,
+        ecg: null, imaging: null,
+        judgment: "血圧H判定(159/102・受診勧奨域)"
+      },
+      {
+        date: "2021-08-28",
+        clinic: "社会医療法人社団 三思会",
+        age: 64,
+        height: null, weight: null, stdWeight: null, waist: null, bmi: null, fatPct: null,
+        sbp: 147, dbp: 97, pulse: null,
+        tc: null, tg: 108, hdl: 78, ldl: 132, lh: 1.7,
+        ast: 18, alt: 11, ggtp: 23, alp: null, ldh: null,
+        tp: null, alb: null, ag: null,
+        fbg: 104, hba1c: 5.6, ga: null,
+        uSugar: "(-)", uProtein: "(-)", uBlood: null,
+        wbc: null, rbc: null, hb: null, ht: null, mcv: null, mch: null, mchc: null, plt: null,
+        cr: null, egfr: null, bun: null, ua: null,
+        cavi: null, lung: null,
+        ecg: null, imaging: null,
+        judgment: "血圧H判定(147/97・受診勧奨域)"
+      },
+      {
+        date: "2025-11-12",
+        clinic: "こいけクリニック (特定健診)",
+        age: 68,
+        height: 158.8, weight: 62.1, stdWeight: 55.5, waist: 84.0, bmi: 24.6, fatPct: null,
+        sbp: 136, dbp: 84, pulse: null,
+        tc: null, tg: 79, hdl: 72, ldl: 129, lh: 1.8,
+        ast: 26, alt: 15, ggtp: 52, alp: null, ldh: null,
+        tp: null, alb: null, ag: null,
+        fbg: 88, hba1c: 5.6, ga: null,
+        uSugar: "(-)", uProtein: "(-)", uBlood: "(±)",
+        wbc: null, rbc: 425, hb: 14.2, ht: 43.2, mcv: null, mch: null, mchc: null, plt: null,
+        cr: 0.91, egfr: 64.1, bun: null, ua: 6.6,
+        cavi: null, lung: null,
+        ecg: "その他", imaging: null,
+        judgment: "メタボ非該当 / 保健指導:なし / 医師判断:要指導(γ-GTP52,尿潜血±)"
+      },
+      {
+        date: "2026-09-09",
+        clinic: "こいけクリニック (血液・尿検査)",
+        age: 69,
+        height: null, weight: null, stdWeight: null, waist: null, bmi: null, fatPct: null,
+        sbp: null, dbp: null, pulse: null,
+        tc: 229, tg: 70, hdl: 69, ldl: 136, lh: 2.0,
+        ast: 28, alt: 29, ggtp: 26, alp: null, ldh: null,
+        tp: null, alb: null, ag: null,
+        fbg: 94, hba1c: 6.1, ga: null,
+        uSugar: "(-)", uProtein: "(-)", uBlood: "(-)",
+        wbc: 5100, rbc: 449, hb: 14.2, ht: 45.1, mcv: 100.4, mch: 31.6, mchc: 31.5, plt: 27.0,
+        cr: 0.93, egfr: null, bun: 20.0, ua: 6.2,
+        cavi: "動脈硬化指数(AI): 2.0", lung: null,
+        ecg: null, imaging: "尿比重1.015 / pH5.0 / ウロビリノーゲン(+-)",
+        judgment: "★γ-GTPが52→26へ半減・正常化！尿潜血も(-)へ改善、中性脂肪70"
+      }
+    ];
+
+    const CHECKUP_STORAGE_KEY = "health_app_checkup_records_v9";
+
+    let healthData = {
+      body: [],
+      nutr: [],
+      sleep: [],
+      bp: []
+    };
+    let checkupRecords = [];
+    let currentDays = 30;
+    let charts = {};
+
+    Chart.defaults.color = '#94a3b8';
+    Chart.defaults.borderColor = 'rgba(71, 85, 105, 0.35)';
+    Chart.defaults.font.family = '"Segoe UI", "Meiryo", sans-serif';
+
+    function showToast(msg, duration = 5500) {
+      const box = document.getElementById('toast-box');
+      if (!box) return;
+      box.innerHTML = msg;
+      box.style.display = 'block';
+      if (duration > 0) setTimeout(() => { box.style.display = 'none'; }, duration);
+    }
+
+    function extractSheetId(url) {
+      if (!url) return null;
+      const m = url.match(/\/spreadsheets\/d\/([a-zA-Z0-9-_]+)/);
+      return (m && m[1] !== 'e') ? m[1] : null;
+    }
+
+    function loadGvizTable(sheetId) {
+      return new Promise((resolve, reject) => {
+        const cbName = 'gviz_hlth_' + Math.random().toString(36).slice(2) + '_' + Date.now();
+        const script = document.createElement('script');
+        let timer = setTimeout(() => {
+          cleanup();
+          reject(new Error('GViz timeout'));
+        }, 5500);
+
+        function cleanup() {
+          clearTimeout(timer);
+          try { delete window[cbName]; } catch(e) { window[cbName] = undefined; }
+          if (script.parentNode) script.parentNode.removeChild(script);
+        }
+
+        window[cbName] = function(resp) {
+          cleanup();
+          if (resp && resp.status === 'ok' && resp.table) {
+            resolve(resp.table);
+          } else {
+            reject(new Error('GViz error'));
+          }
+        };
+
+        script.src = `https://docs.google.com/spreadsheets/d/${sheetId}/gviz/tq?tqx=responseHandler:${cbName}&_=${Date.now()}`;
+        script.onerror = function() {
+          cleanup();
+          reject(new Error('Script load error'));
+        };
+        document.head.appendChild(script);
+      });
+    }
+
+    function cellText(c) {
+      if (!c) return '';
+      if (c.f !== undefined && c.f !== null && String(c.f).trim() !== '') return String(c.f).trim();
+      if (c.v === undefined || c.v === null) return '';
+      const s = String(c.v).trim();
+      const dm = s.match(/^Date\((\d+),(\d+),(\d+)/);
+      if (dm) {
+        const y = parseInt(dm[1], 10);
+        const mo = parseInt(dm[2], 10) + 1;
+        const da = parseInt(dm[3], 10);
+        if (y >= 2000) {
+          return `${y}-${('0'+mo).slice(-2)}-${('0'+da).slice(-2)}`;
+        }
+      }
+      return s;
+    }
+
+    function cellNum(c) {
+      if (!c) return null;
+      if (typeof c.v === 'number' && !isNaN(c.v)) return c.v;
+      const txt = cellText(c).replace(/,/g, '');
+      if (txt === '') return null;
+      const n = Number(txt);
+      return isNaN(n) ? null : n;
+    }
+
+    function cellDurationHours(c) {
+      if (!c) return null;
+      if (c.f !== undefined && c.f !== null) {
+        const fStr = String(c.f).trim();
+        const m = fStr.match(/^(\d+):(\d+)/);
+        if (m) return +(parseInt(m[1], 10) + parseInt(m[2], 10) / 60).toFixed(2);
+      }
+      if (c.v !== undefined && c.v !== null) {
+        const vStr = String(c.v).trim();
+        const dm = vStr.match(/^Date\(\d+,\d+,\d+,(\d+),(\d+)/);
+        if (dm) return +(parseInt(dm[1], 10) + parseInt(dm[2], 10) / 60).toFixed(2);
+        const hm = vStr.match(/^(\d+):(\d+)/);
+        if (hm) return +(parseInt(hm[1], 10) + parseInt(hm[2], 10) / 60).toFixed(2);
+        if (typeof c.v === 'number' && !isNaN(c.v)) {
+          if (c.v > 0 && c.v < 1) return +(c.v * 24).toFixed(2);
+          if (c.v >= 0 && c.v <= 24) return +c.v.toFixed(2);
+        }
+      }
+      return null;
+    }
+
+    function normDate(str) {
+      if (!str) return null;
+      const m = String(str).match(/(\d{4})[-/年](\d{1,2})[-/月](\d{1,2})/);
+      if (!m) return null;
+      const y = parseInt(m[1], 10);
+      const mo = parseInt(m[2], 10);
+      const da = parseInt(m[3], 10);
+      if (y < 2000 || y > 2100 || mo < 1 || mo > 12 || da < 1 || da > 31) return null;
+      return `${y}-${('0'+mo).slice(-2)}-${('0'+da).slice(-2)}`;
+    }
+
+    function parseBodyTable(table) {
+      const list = [];
+      if (!table || !table.rows) return list;
+      table.rows.forEach(r => {
+        try {
+          const c = r.c || [];
+          let d = normDate(cellText(c[0])) || normDate(cellText(c[1]));
+          if (!d) return;
+          const offset = normDate(cellText(c[0])) ? 0 : 1;
+          const weight = cellNum(c[offset + 2]);
+          const muscle = cellNum(c[offset + 3]);
+          const fatMass = cellNum(c[offset + 4]);
+          const fatPct = cellNum(c[offset + 5]);
+          const bmr = cellNum(c[offset + 6]);
+          const vfl = cellNum(c[offset + 7]);
+          const score = cellNum(c[offset + 8]);
+          const bmi = cellNum(c[offset + 9]);
+          const waist = cellNum(c[offset + 10]);
+          if (weight && weight > 30 && weight < 150) {
+            list.push({ date: d, weight, muscle, fatMass, fatPct, bmr, vfl, score, bmi, waist, memo: cellText(c[offset + 16]) || cellText(c[offset + 15]) });
+          }
+        } catch(e) {}
+      });
+      return list;
+    }
+
+    function parseNutrTable(table) {
+      const list = [];
+      if (!table || !table.rows) return list;
+      table.rows.forEach(r => {
+        try {
+          const c = r.c || [];
+          let d = normDate(cellText(c[0])) || normDate(cellText(c[1]));
+          if (!d) return;
+          const offset = normDate(cellText(c[0])) ? 0 : 1;
+          const calIn = cellNum(c[offset + 1]);
+          const calOut = cellNum(c[offset + 2]);
+          const carb = cellNum(c[offset + 3]);
+          const prot = cellNum(c[offset + 4]);
+          const fat = cellNum(c[offset + 6]);
+          const fiber = cellNum(c[offset + 7]);
+          const salt = cellNum(c[offset + 11]);
+          if (calIn !== null && calIn > 0) {
+            list.push({ date: d, calIn, calOut, calBal: (calIn && calOut) ? (calIn - calOut) : null, carb, prot, fat, fiber, salt, memo: cellText(c[offset + 15]) });
+          }
+        } catch(e) {}
+      });
+      return list;
+    }
+
+    function parseSleepTable(table) {
+      const list = [];
+      if (!table || !table.rows) return list;
+      table.rows.forEach(r => {
+        try {
+          const c = r.c || [];
+          let d = normDate(cellText(c[1])) || normDate(cellText(c[0]));
+          if (!d) return;
+          const med = cellText(c[2]);
+          const alc = cellText(c[3]);
+          const totalH = cellDurationHours(c[6]);
+          const score = cellNum(c[7]);
+          const eff = cellNum(c[8]);
+          const awakeH = cellDurationHours(c[9]);
+          const remH = cellDurationHours(c[11]);
+          const lightH = cellDurationHours(c[12]);
+          const deepH = cellDurationHours(c[13]);
+          const memo = cellText(c[17]) || cellText(c[16]);
+          if ((totalH !== null && totalH > 0) || (score !== null && score > 0)) {
+            list.push({ date: d, med, alc, totalH, score, eff, awakeH, remH, lightH, deepH, memo });
+          }
+        } catch(e) {}
+      });
+      return list;
+    }
+
+    function parseBpTable(table) {
+      const list = [];
+      if (!table || !table.rows) return list;
+      table.rows.forEach(r => {
+        try {
+          const c = r.c || [];
+          const d = normDate(cellText(c[0]));
+          if (!d) return;
+          const sbp = cellNum(c[2]);
+          const dbp = cellNum(c[3]);
+          const pulse = cellNum(c[4]);
+          if (sbp && dbp && sbp > 50 && dbp > 30) {
+            list.push({ date: d, time: cellText(c[1]), sbp, dbp, pulse, note: cellText(c[5]) });
+          }
+        } catch(e) {}
+      });
+      return list;
+    }
+
+    // ★ 禁酒日数（2026-08-19起点）＆ 禁煙日数（1983-03-01起点・オレンジ文字）の自動算出
+    function updateSobrietyBadge() {
+      try {
+        const now = new Date();
+        const startSobriety = new Date("2026-08-19T00:00:00+09:00");
+        const diffSobriety = Math.max(1, Math.floor((now - startSobriety) / (1000 * 60 * 60 * 24)) + 1);
+        document.getElementById('sobriety-badge').innerText = `禁酒 ${diffSobriety} 日目`;
+
+        const startNoSmoking = new Date("1983-03-01T00:00:00+09:00");
+        const diffNoSmoking = Math.max(1, Math.floor((now - startNoSmoking) / (1000 * 60 * 60 * 24)) + 1);
+        document.getElementById('nosmoking-badge').innerText = `禁煙 ${diffNoSmoking.toLocaleString()} 日目`;
+      } catch(e) {}
+    }
+
+    async function syncAllHealthSheets(showToastFlag = false) {
+      const urls = {
+        body:  document.getElementById('url-body').value.trim()  || DEFAULT_HEALTH_URLS.body,
+        nutr:  document.getElementById('url-nutr').value.trim()  || DEFAULT_HEALTH_URLS.nutr,
+        sleep: document.getElementById('url-sleep').value.trim() || DEFAULT_HEALTH_URLS.sleep,
+        bp:    document.getElementById('url-bp').value.trim()    || DEFAULT_HEALTH_URLS.bp
+      };
+
+      const badge = document.getElementById('sync-status-badge');
+      badge.innerText = '⏳ スプレッドシート同期中...';
+
+      try {
+        const results = await Promise.allSettled([
+          loadGvizTable(extractSheetId(urls.body)),
+          loadGvizTable(extractSheetId(urls.nutr)),
+          loadGvizTable(extractSheetId(urls.sleep)),
+          loadGvizTable(extractSheetId(urls.bp))
+        ]);
+
+        if (results[0].status === 'fulfilled') healthData.body  = parseBodyTable(results[0].value);
+        if (results[1].status === 'fulfilled') healthData.nutr  = parseNutrTable(results[1].value);
+        if (results[2].status === 'fulfilled') healthData.sleep = parseSleepTable(results[2].value);
+        if (results[3].status === 'fulfilled') healthData.bp    = parseBpTable(results[3].value);
+
+        const todayStr = new Date().toISOString().slice(0, 10);
+        const allDates = [
+          ...healthData.body.map(x => x.date),
+          ...healthData.nutr.map(x => x.date),
+          ...healthData.sleep.map(x => x.date),
+          ...healthData.bp.map(x => x.date)
+        ].filter(d => d && d <= todayStr).sort();
+
+        const okCount = results.filter(r => r.status === 'fulfilled').length;
+        const latestD = allDates[allDates.length - 1] || '2026-10-27';
+
+        if (okCount > 0 && allDates.length > 0) {
+          badge.innerText = `✓ スプレッドシート自動同期済 (${okCount}種・最新 ${latestD})`;
+          badge.style.background = 'rgba(16, 185, 129, 0.2)';
+          badge.style.color = '#34d399';
+        } else {
+          badge.innerText = `✓ 内蔵キャッシュ＆19回健診・献血データ表示中`;
+        }
+
+        renderAll();
+        if (showToastFlag) {
+          showToast(`✅ スプレッドシート同期完了！（最新日: <b>${latestD}</b>）`);
+        }
+      } catch (e) {
+        badge.innerText = '✓ 内蔵キャッシュ＆19回健診・献血データ表示中';
+        renderAll();
+      }
+    }
+
+    function mergeCheckupList(baseList, incomingList) {
+      const map = new Map();
+      (baseList || []).forEach(r => { if (r && r.date) map.set(r.date, { ...r }); });
+      (incomingList || []).forEach(inc => {
+        if (!inc || !inc.date) return;
+        const existing = map.get(inc.date) || { date: inc.date };
+        const merged = { ...existing };
+        Object.keys(inc).forEach(k => {
+          if (inc[k] !== null && inc[k] !== undefined && inc[k] !== "") {
+            merged[k] = inc[k];
+          }
+        });
+        if (!merged.age && merged.date) {
+          const y = parseInt(merged.date.slice(0, 4), 10);
+          const m = parseInt(merged.date.slice(5, 7), 10);
+          merged.age = (y - 1956) - (m < 12 ? 1 : 0);
+        }
+        map.set(inc.date, merged);
+      });
+      return Array.from(map.values()).sort((a, b) => a.date.localeCompare(b.date));
+    }
+
+    function saveCheckupToStorage() {
+      safeSetStorage(CHECKUP_STORAGE_KEY, JSON.stringify(checkupRecords));
+    }
+
+    function toggleCheckupMergePanel() {
+      document.getElementById('checkup-merge-panel').classList.toggle('open');
+    }
+
+    function updateCheckupDropdown() {
+      const sel = document.getElementById('load-existing-checkup');
+      if (!sel) return;
+      sel.innerHTML = `<option value="">✏️ 既存データを選択して編集 (${checkupRecords.length}回分)...</option>` +
+        checkupRecords.slice().reverse().map(r => `<option value="${r.date}">${r.date} (${r.age || ''}歳 - ${r.clinic || '健診'})</option>`).join('');
+    }
+
+    function loadCheckupToForm(dateStr) {
+      if (!dateStr) return;
+      const r = checkupRecords.find(x => x.date === dateStr);
+      if (!r) return;
+      document.getElementById('f-date').value = r.date || '';
+      document.getElementById('f-clinic').value = r.clinic || '';
+      document.getElementById('f-height').value = r.height ?? '';
+      document.getElementById('f-weight').value = r.weight ?? '';
+      document.getElementById('f-waist').value = r.waist ?? '';
+      document.getElementById('f-bmi').value = r.bmi ?? '';
+      document.getElementById('f-fatpct').value = r.fatPct ?? '';
+      document.getElementById('f-sbp').value = r.sbp ?? '';
+      document.getElementById('f-dbp').value = r.dbp ?? '';
+      document.getElementById('f-pulse').value = r.pulse ?? '';
+      document.getElementById('f-tc').value = r.tc ?? '';
+      document.getElementById('f-tg').value = r.tg ?? '';
+      document.getElementById('f-hdl').value = r.hdl ?? '';
+      document.getElementById('f-ldl').value = r.ldl ?? '';
+      document.getElementById('f-lh').value = r.lh ?? '';
+      document.getElementById('f-ast').value = r.ast ?? '';
+      document.getElementById('f-alt').value = r.alt ?? '';
+      document.getElementById('f-ggtp').value = r.ggtp ?? '';
+      document.getElementById('f-tpalb').value = [r.tp, r.alb].filter(Boolean).join(' / ');
+      document.getElementById('f-fbg').value = r.fbg ?? '';
+      document.getElementById('f-hba1c').value = r.hba1c ?? '';
+      document.getElementById('f-ga').value = r.ga ?? '';
+      document.getElementById('f-cr').value = r.cr ?? '';
+      document.getElementById('f-egfr').value = r.egfr ?? '';
+      document.getElementById('f-bun').value = r.bun ?? '';
+      document.getElementById('f-ua').value = r.ua ?? '';
+      document.getElementById('f-wbc').value = r.wbc ?? '';
+      document.getElementById('f-rbc').value = r.rbc ?? '';
+      document.getElementById('f-hb').value = r.hb ?? '';
+      document.getElementById('f-ht').value = r.ht ?? '';
+      document.getElementById('f-plt').value = r.plt ?? '';
+      document.getElementById('f-cavi').value = r.cavi || '';
+      document.getElementById('f-lung').value = r.lung || '';
+      document.getElementById('f-urine').value = `${r.uSugar || '(-)'} / ${r.uProtein || '(-)'} / ${r.uBlood || '(-)'}`;
+      document.getElementById('f-note').value = [r.ecg, r.imaging, r.judgment].filter(Boolean).join(' / ');
+    }
+
+    function clearCheckupForm() {
+      ['f-date','f-clinic','f-height','f-weight','f-waist','f-bmi','f-fatpct','f-sbp','f-dbp','f-pulse','f-tc','f-tg','f-hdl','f-ldl','f-lh','f-ast','f-alt','f-ggtp','f-tpalb','f-fbg','f-hba1c','f-ga','f-cr','f-egfr','f-bun','f-ua','f-wbc','f-rbc','f-hb','f-ht','f-plt','f-cavi','f-lung','f-urine','f-note'].forEach(id => {
+        const el = document.getElementById(id);
+        if (el) el.value = '';
+      });
+      document.getElementById('load-existing-checkup').value = '';
+    }
+
+    function numOrNull(id) {
+      const el = document.getElementById(id);
+      if (!el) return null;
+      const v = el.value.trim();
+      if (v === '') return null;
+      const n = Number(v);
+      return isNaN(n) ? null : n;
+    }
+
+    function saveAndMergeCheckupForm() {
+      const d = document.getElementById('f-date').value.trim();
+      if (!d) {
+        alert('受診日（YYYY-MM-DD）を入力してください。');
+        return;
+      }
+      const urineParts = (document.getElementById('f-urine').value || '').split('/').map(s => s.trim());
+      const tpalbParts = (document.getElementById('f-tpalb').value || '').split('/').map(s => Number(s.trim()));
+      const h = numOrNull('f-height');
+      const w = numOrNull('f-weight');
+      let bmi = numOrNull('f-bmi');
+      if (!bmi && h && w) {
+        bmi = +(w / ((h / 100) * (h / 100))).toFixed(1);
+      }
+      const ldl = numOrNull('f-ldl');
+      const hdl = numOrNull('f-hdl');
+      let lh = numOrNull('f-lh');
+      if (!lh && ldl && hdl) {
+        lh = +(ldl / hdl).toFixed(1);
+      }
+
+      const newRec = {
+        date: d,
+        clinic: document.getElementById('f-clinic').value.trim() || null,
+        height: h,
+        weight: w,
+        waist: numOrNull('f-waist'),
+        bmi: bmi,
+        fatPct: numOrNull('f-fatpct'),
+        sbp: numOrNull('f-sbp'),
+        dbp: numOrNull('f-dbp'),
+        pulse: numOrNull('f-pulse'),
+        tc: numOrNull('f-tc'),
+        tg: numOrNull('f-tg'),
+        hdl: hdl,
+        ldl: ldl,
+        lh: lh,
+        ast: numOrNull('f-ast'),
+        alt: numOrNull('f-alt'),
+        ggtp: numOrNull('f-ggtp'),
+        tp: !isNaN(tpalbParts[0]) && tpalbParts[0] > 0 ? tpalbParts[0] : null,
+        alb: !isNaN(tpalbParts[1]) && tpalbParts[1] > 0 ? tpalbParts[1] : null,
+        fbg: numOrNull('f-fbg'),
+        hba1c: numOrNull('f-hba1c'),
+        ga: numOrNull('f-ga'),
+        cr: numOrNull('f-cr'),
+        egfr: numOrNull('f-egfr'),
+        bun: numOrNull('f-bun'),
+        ua: numOrNull('f-ua'),
+        wbc: numOrNull('f-wbc'),
+        rbc: numOrNull('f-rbc'),
+        hb: numOrNull('f-hb'),
+        ht: numOrNull('f-ht'),
+        plt: numOrNull('f-plt'),
+        cavi: document.getElementById('f-cavi').value.trim() || null,
+        lung: document.getElementById('f-lung').value.trim() || null,
+        uSugar: urineParts[0] || null,
+        uProtein: urineParts[1] || null,
+        uBlood: urineParts[2] || null,
+        judgment: document.getElementById('f-note').value.trim() || null
+      };
+
+      checkupRecords = mergeCheckupList(checkupRecords, [newRec]);
+      saveCheckupToStorage();
+      renderCheckupTab();
+      showToast(`✅ 受診・採血日 <b>${d}</b> のデータをマージ・保存しました！`);
+    }
+
+    function deleteSelectedCheckup() {
+      const d = document.getElementById('f-date').value.trim();
+      if (!d) return;
+      if (!confirm(`${d} のデータを削除しますか？`)) return;
+      checkupRecords = checkupRecords.filter(r => r.date !== d);
+      saveCheckupToStorage();
+      clearCheckupForm();
+      renderCheckupTab();
+      showToast(`🗑️ ${d} のデータを削除しました。`);
+    }
+
+    function resetCheckupToDefault() {
+      if (!confirm('健診・献血データを初期登録（2008年〜2026年9月の全19回分）に戻しますか？')) return;
+      safeRemoveStorage(CHECKUP_STORAGE_KEY);
+      checkupRecords = mergeCheckupList([], INITIAL_CHECKUP_DATA);
+      saveCheckupToStorage();
+      renderCheckupTab();
+      showToast('🔄 健診・献血データを全19回の初期状態にリセットしました。');
+    }
+
+    function exportCheckupCsv() {
+      const csv = Papa.unparse(checkupRecords);
+      const blob = new Blob(["\uFEFF" + csv], { type: "text/csv;charset=utf-8;" });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement("a");
+      a.href = url;
+      a.download = `health_checkup_18years_19records_${new Date().toISOString().slice(0,10)}.csv`;
+      a.click();
+    }
+
+    async function importCheckupDataFile(evt) {
+      const file = evt.target.files?.[0];
+      if (!file) return;
+      const text = await file.text();
+      let imported = [];
+      try {
+        if (file.name.endsWith('.json')) {
+          imported = JSON.parse(text);
+        } else {
+          const res = Papa.parse(text, { header: true, dynamicTyping: true, skipEmptyLines: true });
+          imported = res.data || [];
+        }
+        checkupRecords = mergeCheckupList(checkupRecords, imported);
+        saveCheckupToStorage();
+        renderCheckupTab();
+        showToast(`✅ ファイルから <b>${imported.length}件</b> のデータをマージしました！`);
+      } catch(e) {
+        alert('ファイルの読み込みに失敗しました。');
+      }
+    }
+
+    window.addEventListener('DOMContentLoaded', function() {
+      let savedUrls = {};
+      try { savedUrls = JSON.parse(safeGetStorage('health_app_urls_v2') || '{}'); } catch (e) {}
+      document.getElementById('url-body').value  = savedUrls.body  || DEFAULT_HEALTH_URLS.body;
+      document.getElementById('url-nutr').value  = savedUrls.nutr  || DEFAULT_HEALTH_URLS.nutr;
+      document.getElementById('url-sleep').value = savedUrls.sleep || DEFAULT_HEALTH_URLS.sleep;
+      document.getElementById('url-bp').value    = savedUrls.bp    || DEFAULT_HEALTH_URLS.bp;
+
+      let savedCheckups = [];
+      try {
+        const raw = safeGetStorage(CHECKUP_STORAGE_KEY) || safeGetStorage("health_app_checkup_records_v8") || safeGetStorage("health_app_checkup_records_v7");
+        if (raw) savedCheckups = JSON.parse(raw);
+      } catch (e) {}
+      checkupRecords = mergeCheckupList(INITIAL_CHECKUP_DATA, savedCheckups);
+      saveCheckupToStorage();
+
+      updateSobrietyBadge();
+      renderAll();
+      syncAllHealthSheets(false);
+    });
+
+    function toggleSyncPanel() {
+      document.getElementById('sync-panel').classList.toggle('open');
+    }
+
+    function saveHealthUrls() {
+      const urls = {
+        body:  document.getElementById('url-body').value.trim(),
+        nutr:  document.getElementById('url-nutr').value.trim(),
+        sleep: document.getElementById('url-sleep').value.trim(),
+        bp:    document.getElementById('url-bp').value.trim()
+      };
+      safeSetStorage('health_app_urls_v2', JSON.stringify(urls));
+      syncAllHealthSheets(true);
+    }
+
+    function resetHealthUrls() {
+      document.getElementById('url-body').value  = DEFAULT_HEALTH_URLS.body;
+      document.getElementById('url-nutr').value  = DEFAULT_HEALTH_URLS.nutr;
+      document.getElementById('url-sleep').value = DEFAULT_HEALTH_URLS.sleep;
+      document.getElementById('url-bp').value    = DEFAULT_HEALTH_URLS.bp;
+      saveHealthUrls();
+    }
+
+    function changePeriod(days, btn) {
+      currentDays = days;
+      document.querySelectorAll('.period-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      renderAll();
+    }
+
+    function switchTab(tabName, btn) {
+      document.querySelectorAll('.tab-btn').forEach(b => b.classList.remove('active'));
+      btn.classList.add('active');
+      ['dashboard', 'logs', 'checkup'].forEach(t => {
+        const el = document.getElementById('tab-' + t);
+        if (el) el.style.display = (t === tabName) ? 'block' : 'none';
+      });
+      renderAll();
+    }
+
+    function buildDailyMap() {
+      const todayStr = new Date().toISOString().slice(0, 10);
+      const map = {};
+      function ensure(d) {
+        if (!map[d]) {
+          map[d] = { date: d, bodyList: [], nutr: null, sleep: null, bpList: [], fallback: null };
+        }
+        return map[d];
+      }
+
+      FALLBACK_DAILY_DATA.forEach(fb => {
+        ensure(fb.date).fallback = fb;
+      });
+
+      healthData.body.forEach(x => { if (x.date <= todayStr) ensure(x.date).bodyList.push(x); });
+      healthData.nutr.forEach(x => { if (x.date <= todayStr) ensure(x.date).nutr = x; });
+      healthData.sleep.forEach(x => { if (x.date <= todayStr) ensure(x.date).sleep = x; });
+      healthData.bp.forEach(x => { if (x.date <= todayStr) ensure(x.date).bpList.push(x); });
+
+      const rows = Object.values(map).sort((a, b) => a.date.localeCompare(b.date));
+      return rows.map(r => {
+        const fb = r.fallback || {};
+        const b = r.bodyList[0] || {};
+        const n = r.nutr || {};
+        const s = r.sleep || {};
+        const bps = r.bpList;
+        const avgSbp = bps.length ? Math.round(bps.reduce((a, x) => a + x.sbp, 0) / bps.length) : (fb.sbp ?? null);
+        const avgDbp = bps.length ? Math.round(bps.reduce((a, x) => a + x.dbp, 0) / bps.length) : (fb.dbp ?? null);
+        const avgPulse = bps.length ? Math.round(bps.reduce((a, x) => a + (x.pulse || 0), 0) / bps.length) : (fb.pulse ?? null);
+
+        const weight = b.weight ?? n.weight ?? fb.weight ?? null;
+        const muscle = b.muscle ?? fb.muscle ?? null;
+        const fatPct = b.fatPct ?? fb.fatPct ?? null;
+        let fatMass = b.fatMass ?? fb.fatMass ?? null;
+        if (fatMass === null && weight !== null && fatPct !== null) {
+          fatMass = +(weight * (fatPct / 100)).toFixed(1);
+        }
+        let otherMass = null;
+        if (weight !== null && muscle !== null && fatMass !== null) {
+          otherMass = +Math.max(0, weight - muscle - fatMass).toFixed(1);
+        }
+
+        return {
+          date: r.date,
+          weight,
+          muscle,
+          fatMass,
+          otherMass,
+          fatPct,
+          bmr: b.bmr ?? fb.bmr ?? null,
+          inbodyScore: b.score ?? fb.inbodyScore ?? null,
+          bmi: b.bmi ?? fb.bmi ?? null,
+          waist: b.waist ?? fb.waist ?? null,
+          calIn: n.calIn ?? fb.calIn ?? null,
+          calOut: n.calOut ?? fb.calOut ?? null,
+          calBal: n.calBal ?? fb.calBal ?? null,
+          prot: n.prot ?? fb.prot ?? null,
+          fiber: n.fiber ?? fb.fiber ?? null,
+          salt: n.salt ?? fb.salt ?? null,
+          sleepH: s.totalH ?? fb.sleepH ?? null,
+          sleepScore: s.score ?? fb.sleepScore ?? null,
+          sleepEff: s.eff ?? fb.sleepEff ?? null,
+          deepH: s.deepH ?? fb.deepH ?? null,
+          remH: s.remH ?? fb.remH ?? null,
+          lightH: s.lightH ?? fb.lightH ?? null,
+          awakeH: s.awakeH ?? fb.awakeH ?? null,
+          sbp: avgSbp,
+          dbp: avgDbp,
+          pulse: avgPulse,
+          memo: [s.memo, b.memo, n.memo].filter(Boolean).join(' / ') || fb.memo || ''
+        };
+      });
+    }
+
+    function avg(arr) {
+      const v = arr.filter(x => typeof x === 'number' && !isNaN(x));
+      if (!v.length) return null;
+      return v.reduce((a, b) => a + b, 0) / v.length;
+    }
+
+    function renderAll() {
+      const allDaily = buildDailyMap();
+      if (!allDaily.length) {
+        renderCheckupTab();
+        return;
+      }
+
+      const maxDateStr = allDaily[allDaily.length - 1].date;
+      const [y, m, d] = maxDateStr.split('-').map(Number);
+      const maxD = new Date(y, m - 1, d);
+      const cutoffD = new Date(maxD);
+      cutoffD.setDate(cutoffD.getDate() - currentDays + 1);
+      const cy = cutoffD.getFullYear();
+      const cm = ('0' + (cutoffD.getMonth() + 1)).slice(-2);
+      const cd = ('0' + cutoffD.getDate()).slice(-2);
+      const cutoffStr = `${cy}-${cm}-${cd}`;
+
+      const filtered = currentDays >= 9000 ? allDaily : allDaily.filter(r => r.date >= cutoffStr);
+      const minDateStr = filtered[0]?.date || maxDateStr;
+
+      const pName = currentDays === 7 ? '直近1週間' : currentDays === 30 ? '直近1か月' : currentDays === 365 ? '直近1年' : '全期間';
+      document.getElementById('period-range-label').innerText = `表示期間：${pName} (${minDateStr} 〜 ${maxDateStr})`;
+
+      const wAvg = avg(filtered.map(x => x.weight));
+      const bmiAvg = avg(filtered.map(x => x.bmi));
+      const latestW = [...filtered].reverse().find(x => x.weight)?.weight;
+      if (wAvg) {
+        document.getElementById('kpi-weight').innerText = `${wAvg.toFixed(1)} kg`;
+        document.getElementById('kpi-weight-sub').innerText = `最新: ${latestW ?? '--'} kg / 平均BMI: ${bmiAvg ? bmiAvg.toFixed(1) : '--'}`;
+      }
+
+      const mAvg = avg(filtered.map(x => x.muscle));
+      const fAvg = avg(filtered.map(x => x.fatPct));
+      const scAvg = avg(filtered.map(x => x.inbodyScore));
+      if (mAvg || fAvg) {
+        document.getElementById('kpi-muscle-fat').innerText = `${mAvg ? mAvg.toFixed(1) : '--'} kg / ${fAvg ? fAvg.toFixed(1) : '--'} %`;
+        document.getElementById('kpi-inbody-sub').innerText = `InBody点数 平均: ${scAvg ? Math.round(scAvg) : '--'} 点`;
+      }
+
+      const cInAvg = avg(filtered.map(x => x.calIn));
+      const cOutAvg = avg(filtered.map(x => x.calOut));
+      const cBalAvg = avg(filtered.map(x => x.calBal));
+      if (cBalAvg !== null) {
+        document.getElementById('kpi-cal-bal').innerText = `${Math.round(cBalAvg)} kcal/日`;
+        document.getElementById('kpi-cal-sub').innerText = `摂取: ${cInAvg ? Math.round(cInAvg) : '--'} kcal / 消費: ${cOutAvg ? Math.round(cOutAvg) : '--'} kcal`;
+      }
+
+      const pAvg = avg(filtered.map(x => x.prot));
+      const fbAvg = avg(filtered.map(x => x.fiber));
+      const sltAvg = avg(filtered.map(x => x.salt));
+      if (pAvg) {
+        document.getElementById('kpi-prot-fib').innerText = `${pAvg.toFixed(1)} g / ${fbAvg ? fbAvg.toFixed(1) : '--'} g`;
+        document.getElementById('kpi-salt-sub').innerText = `平均塩分: ${sltAvg ? sltAvg.toFixed(1) : '--'} g/日`;
+      }
+
+      const slpHAvg = avg(filtered.map(x => x.sleepH));
+      const slpScAvg = avg(filtered.map(x => x.sleepScore));
+      const slpEfAvg = avg(filtered.map(x => x.sleepEff));
+      if (slpHAvg) {
+        document.getElementById('kpi-sleep').innerText = `${slpHAvg.toFixed(2)} h (${slpScAvg ? slpScAvg.toFixed(1) : '--'}点)`;
+        document.getElementById('kpi-sleep-sub').innerText = `平均睡眠効率: ${slpEfAvg ? slpEfAvg.toFixed(1) : '--'} %`;
+      }
+
+      const sbpAvg = avg(filtered.map(x => x.sbp));
+      const dbpAvg = avg(filtered.map(x => x.dbp));
+      const plsAvg = avg(filtered.map(x => x.pulse));
+      if (sbpAvg && dbpAvg) {
+        document.getElementById('kpi-bp').innerText = `${Math.round(sbpAvg)} / ${Math.round(dbpAvg)} mmHg`;
+        document.getElementById('kpi-bp-sub').innerText = `平均脈拍: ${plsAvg ? Math.round(plsAvg) : '--'} bpm (全測定)`;
+      }
+
+      const labels = filtered.map(x => x.date.slice(5));
+
+      // ★ ① 体組成推移（体重目盛り下限：48kg ／ 体脂肪率目盛り下限：15%）
+      renderChart('chart-body', {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            { label: '体重 (kg・左軸)', data: filtered.map(x => x.weight), borderColor: '#3b82f6', backgroundColor: '#3b82f6', tension: 0.2, yAxisID: 'y', spanGaps: true },
+            { label: '体脂肪率 (%・右軸)', data: filtered.map(x => x.fatPct), borderColor: '#f59e0b', backgroundColor: '#f59e0b', tension: 0.2, yAxisID: 'y1', spanGaps: true }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          scales: {
+            y: { type: 'linear', position: 'left', min: 48, title: { display: true, text: '体重 (kg)' } },
+            y1: { type: 'linear', position: 'right', min: 15, grid: { drawOnChartArea: false }, title: { display: true, text: '体脂肪率 (%)' } }
+          }
+        }
+      });
+
+      // ② 栄養・カロリー収支推移（消費カロリー＝赤）
+      renderChart('chart-cal', {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: 'カロリー収支 (kcal)', data: filtered.map(x => x.calBal), type: 'line', borderColor: '#10b981', backgroundColor: '#10b981', tension: 0.2, spanGaps: true },
+            { label: '摂取カロリー (kcal)', data: filtered.map(x => x.calIn), backgroundColor: 'rgba(59, 130, 246, 0.7)' },
+            { label: '消費カロリー (kcal)', data: filtered.map(x => x.calOut), backgroundColor: 'rgba(239, 68, 68, 0.75)' }
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+
+      // ③ 主要栄養素・塩分推移
+      renderChart('chart-nutr-detail', {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            { label: 'タンパク質 (g・左軸)', data: filtered.map(x => x.prot), borderColor: '#10b981', backgroundColor: '#10b981', yAxisID: 'y', spanGaps: true },
+            { label: '食物繊維 (g・左軸)', data: filtered.map(x => x.fiber), borderColor: '#3b82f6', backgroundColor: '#3b82f6', yAxisID: 'y', spanGaps: true },
+            { label: '塩分 (g・右軸)', data: filtered.map(x => x.salt), borderColor: '#ef4444', borderDash: [4,4], yAxisID: 'y1', spanGaps: true }
+          ]
+        },
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          scales: {
+            y: { position: 'left' },
+            y1: { position: 'right', min: 0, max: 12, grid: { drawOnChartArea: false } }
+          }
+        }
+      });
+
+      // ④ 睡眠ステージ内訳推移
+      renderChart('chart-sleep-stage', {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: '深い睡眠 (h)', data: filtered.map(x => x.deepH), backgroundColor: '#1d4ed8', stack: 'slp' },
+            { label: 'レム睡眠 (h)', data: filtered.map(x => x.remH), backgroundColor: '#06b6d4', stack: 'slp' },
+            { label: '浅い睡眠 (h)', data: filtered.map(x => x.lightH), backgroundColor: '#8b5cf6', stack: 'slp' },
+            { label: '覚醒 (h)', data: filtered.map(x => x.awakeH), backgroundColor: '#f59e0b', stack: 'slp' }
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false, scales: { x: { stacked: true }, y: { stacked: true } } }
+      });
+
+      // ⑤ 日次平均 血圧・脈拍推移
+      renderChart('chart-bp-daily', {
+        type: 'line',
+        data: {
+          labels,
+          datasets: [
+            { label: '最高血圧・上 (mmHg)', data: filtered.map(x => x.sbp), borderColor: '#ef4444', backgroundColor: '#ef4444', tension: 0.2, spanGaps: true },
+            { label: '最低血圧・下 (mmHg)', data: filtered.map(x => x.dbp), borderColor: '#3b82f6', backgroundColor: '#3b82f6', tension: 0.2, spanGaps: true },
+            { label: '脈拍 (bpm)', data: filtered.map(x => x.pulse), borderColor: '#10b981', borderDash: [4,4], tension: 0.2, spanGaps: true }
+          ]
+        },
+        options: { responsive: true, maintainAspectRatio: false }
+      });
+
+      // ⑥ 総体重の内訳積み上げ推移（50kg〜57kgの枠内で「骨格筋量・体脂肪量・その他」の3色を構成比で分割し、頂点＝総体重に一致させるフローティング積み上げ）
+      const Y_BASE = 50;
+      const segMuscle = filtered.map(x => {
+        if (!x.weight || !x.muscle || x.weight <= Y_BASE) return null;
+        const span = x.weight - Y_BASE;
+        const m1 = +(Y_BASE + span * (x.muscle / x.weight)).toFixed(2);
+        return [Y_BASE, m1];
+      });
+      const segFat = filtered.map(x => {
+        if (!x.weight || !x.muscle || !x.fatMass || x.weight <= Y_BASE) return null;
+        const span = x.weight - Y_BASE;
+        const m1 = +(Y_BASE + span * (x.muscle / x.weight)).toFixed(2);
+        const m2 = +(m1 + span * (x.fatMass / x.weight)).toFixed(2);
+        return [m1, m2];
+      });
+      const segOther = filtered.map(x => {
+        if (!x.weight || !x.muscle || !x.fatMass || x.weight <= Y_BASE) return null;
+        const span = x.weight - Y_BASE;
+        const m1 = +(Y_BASE + span * (x.muscle / x.weight)).toFixed(2);
+        const m2 = +(m1 + span * (x.fatMass / x.weight)).toFixed(2);
+        return [m2, +x.weight.toFixed(2)];
+      });
+
+      renderChart('chart-muscle-bmr', {
+        type: 'bar',
+        data: {
+          labels,
+          datasets: [
+            { label: '骨格筋量 (kg)', data: segMuscle, backgroundColor: 'rgba(16, 185, 129, 0.88)', grouped: false },
+            { label: '体脂肪量 (kg)', data: segFat, backgroundColor: 'rgba(245, 158, 11, 0.88)', grouped: false },
+            { label: 'その他・骨/水分等 (kg)', data: segOther, backgroundColor: 'rgba(59, 130, 246, 0.82)', grouped: false }
+          ]
+        },
+        options: {
+          responsive: true,
+          maintainAspectRatio: false,
+          interaction: { mode: 'index', intersect: false },
+          plugins: {
+            tooltip: {
+              callbacks: {
+                label: function(ctx) {
+                  const row = filtered[ctx.dataIndex];
+                  if (!row) return '';
+                  if (ctx.datasetIndex === 0) return `骨格筋量: ${row.muscle ?? '-'} kg (${row.weight ? ((row.muscle/row.weight)*100).toFixed(1) : '-'}%)`;
+                  if (ctx.datasetIndex === 1) return `体脂肪量: ${row.fatMass ?? '-'} kg (${row.fatPct ?? '-'}%)`;
+                  return `その他・骨/水分等: ${row.otherMass ?? '-'} kg`;
+                },
+                footer: function(items) {
+                  if (!items.length) return '';
+                  const row = filtered[items[0].dataIndex];
+                  return row && row.weight ? `総体重: ${row.weight.toFixed(1)} kg` : '';
+                }
+              }
+            }
+          },
+          scales: {
+            y: {
+              min: 50,
+              max: 57,
+              title: { display: true, text: '総体重 (50kg〜57kg) ＆ 3要素構成比' }
+            }
+          }
+        }
+      });
+
+      window._cachedDailyRows = filtered.slice().reverse();
+      renderDailyTable();
+      renderCheckupTab({
+        weight: latestW || (wAvg ? +wAvg.toFixed(1) : 53.5),
+        bmi: bmiAvg ? +bmiAvg.toFixed(1) : 21.9,
+        fatPct: fAvg ? +fAvg.toFixed(1) : 20.7,
+        sbp: sbpAvg ? Math.round(sbpAvg) : 113,
+        dbp: dbpAvg ? Math.round(dbpAvg) : 70,
+        pulse: plsAvg ? Math.round(plsAvg) : 58
+      });
+    }
+
+    function renderDailyTable() {
+      const rows = window._cachedDailyRows || [];
+      const q = (document.getElementById('daily-log-search')?.value || '').toLowerCase();
+      const filtered = q ? rows.filter(r => JSON.stringify(r).toLowerCase().includes(q)) : rows;
+
+      document.querySelector('#table-daily-logs tbody').innerHTML = filtered.slice(0, 150).map(r => `
+        <tr>
+          <td><b>${r.date}</b></td>
+          <td><b>${r.weight ?? '-'} kg</b> / ${r.fatPct ?? '-'} %</td>
+          <td>筋:${r.muscle ?? '-'} / 脂:${r.fatMass ?? '-'} / 他:${r.otherMass ?? '-'} kg</td>
+          <td>${r.calIn ?? '-'} / ${r.calOut ?? '-'} (${r.calBal !== null ? (r.calBal > 0 ? '+'+r.calBal : r.calBal) : '-'})</td>
+          <td>${r.prot ?? '-'} g / ${r.salt ?? '-'} g</td>
+          <td>${r.sleepH ?? '-'} h (${r.sleepScore ?? '-'}点)</td>
+          <td>${r.sbp ? r.sbp + '/' + r.dbp : '-'} (${r.pulse ?? '-'})</td>
+          <td style="font-size:0.74rem; color:#cbd5e1; max-width:340px;">${r.memo || ''}</td>
+        </tr>
+      `).join('');
+    }
+
+    const METRIC_ROWS = [
+      { key: "clinic",   label: "実施機関・健診/献血種別", cat: "基本情報", unit: "", ref: "-", eval: () => "" },
+      { key: "height",   label: "身長", cat: "身体測定", unit: "cm", ref: "-", eval: () => "" },
+      { key: "weight",   label: "体重 (標準55.5kg)", cat: "身体測定", unit: "kg", ref: "-", eval: () => "" },
+      { key: "waist",    label: "腹囲", cat: "身体測定", unit: "cm", ref: "85未満", eval: v => v >= 85 ? "cell-warn" : "cell-good" },
+      { key: "bmi",      label: "BMI", cat: "身体測定", unit: "", ref: "18.5〜24.9", eval: v => (v >= 25 || v < 18.5) ? "cell-warn" : "cell-good" },
+      { key: "fatPct",   label: "体脂肪率", cat: "身体測定", unit: "%", ref: "14.0〜23.0%", eval: v => v > 23.0 ? "cell-warn" : "cell-good" },
+
+      { key: "sbp",   label: "収縮期血圧 (上)", cat: "血圧・脈拍", unit: "mmHg", ref: "130未満 (受診140以上)", eval: v => v >= 140 ? "cell-high" : (v >= 130 ? "cell-warn" : "cell-good") },
+      { key: "dbp",   label: "拡張期血圧 (下)", cat: "血圧・脈拍", unit: "mmHg", ref: "85未満 (受診90以上)", eval: v => v >= 90 ? "cell-high" : (v >= 85 ? "cell-warn" : "cell-good") },
+      { key: "pulse", label: "脈拍", cat: "血圧・脈拍", unit: "bpm", ref: "51〜90", eval: v => (v < 45 || v > 95) ? "cell-warn" : "cell-good" },
+
+      { key: "tc",  label: "総コレステロール (CHOL)", cat: "血中脂質", unit: "mg/dl", ref: "130〜219 (献血250以下)", eval: v => v >= 250 ? "cell-high" : (v >= 220 ? "cell-warn" : "cell-good") },
+      { key: "tg",  label: "空腹時中性脂肪", cat: "血中脂質", unit: "mg/dl", ref: "35〜149 (受診300以上)", eval: v => v >= 300 ? "cell-high" : (v >= 150 ? "cell-warn" : "cell-good") },
+      { key: "hdl", label: "HDLコレステロール", cat: "血中脂質", unit: "mg/dl", ref: "40以上", eval: v => v < 40 ? "cell-warn" : "cell-good" },
+      { key: "ldl", label: "LDLコレステロール", cat: "血中脂質", unit: "mg/dl", ref: "70〜119 (受診140以上)", eval: v => v >= 140 ? "cell-high" : (v >= 120 ? "cell-warn" : "cell-good") },
+      { key: "lh",  label: "LH比 (LDL/HDL)", cat: "血中脂質", unit: "", ref: "1.5以下目安", eval: v => v > 1.5 ? "cell-warn" : "cell-good" },
+
+      { key: "ast",  label: "AST (GOT)", cat: "肝・蛋白代謝", unit: "U/L", ref: "31未満 (受診51以上)", eval: v => v >= 51 ? "cell-high" : (v >= 31 ? "cell-warn" : "cell-good") },
+      { key: "alt",  label: "ALT (GPT)", cat: "肝・蛋白代謝", unit: "U/L", ref: "31未満 (献血45以下)", eval: v => v >= 51 ? "cell-high" : (v >= 31 ? "cell-warn" : "cell-good") },
+      { key: "ggtp", label: "γ-GTP", cat: "肝・蛋白代謝", unit: "U/L", ref: "51未満 (献血65以下)", eval: v => v >= 101 ? "cell-high" : (v >= 51 ? "cell-warn" : "cell-good") },
+      { key: "tp",   label: "総蛋白 (TP)", cat: "肝・蛋白代謝", unit: "g/dl", ref: "6.5〜8.2", eval: v => (v < 6.5 || v > 8.3) ? "cell-warn" : "cell-good" },
+      { key: "alb",  label: "アルブミン (ALB)", cat: "肝・蛋白代謝", unit: "g/dl", ref: "3.9〜5.0", eval: v => v < 3.8 ? "cell-warn" : "cell-good" },
+      { key: "ag",   label: "A/G比", cat: "肝・蛋白代謝", unit: "", ref: "1.2〜2.0", eval: v => (v < 1.2 || v > 2.1) ? "cell-warn" : "cell-good" },
+      { key: "alp",  label: "ALP", cat: "肝・蛋白代謝", unit: "U/L", ref: "110〜360", eval: () => "cell-good" },
+      { key: "ldh",  label: "LDH", cat: "肝・蛋白代謝", unit: "U/L", ref: "115〜245", eval: () => "cell-good" },
+
+      { key: "fbg",   label: "空腹時血糖", cat: "糖代謝", unit: "mg/dl", ref: "100未満 (受診126以上)", eval: v => v >= 126 ? "cell-high" : (v >= 100 ? "cell-warn" : "cell-good") },
+      { key: "hba1c", label: "HbA1c (NGSP)", cat: "糖代謝", unit: "%", ref: "5.6未満 (受診6.5以上)", eval: v => v >= 6.5 ? "cell-high" : (v >= 5.6 ? "cell-warn" : "cell-good") },
+      { key: "ga",    label: "グリコアルブミン (GA・献血)", cat: "糖代謝", unit: "%", ref: "16.5%未満", eval: v => v >= 16.5 ? "cell-warn" : "cell-good" },
+
+      { key: "cr",   label: "血清クレアチニン", cat: "腎機能・尿酸", unit: "mg/dl", ref: "0.61〜1.04", eval: v => v > 1.04 ? "cell-warn" : "cell-good" },
+      { key: "egfr", label: "eGFR", cat: "腎機能・尿酸", unit: "mL/min", ref: "60.0以上", eval: v => v < 60 ? "cell-warn" : "cell-good" },
+      { key: "bun",  label: "尿素窒素 (BUN)", cat: "腎機能・尿酸", unit: "mg/dl", ref: "8.0〜22.0", eval: v => (v < 8 || v > 23) ? "cell-warn" : "cell-good" },
+      { key: "ua",   label: "血清尿酸", cat: "腎機能・尿酸", unit: "mg/dl", ref: "3.7〜7.0", eval: v => v > 7.0 ? "cell-warn" : "cell-good" },
+
+      { key: "uSugar",   label: "尿糖", cat: "尿検査", unit: "", ref: "(-)", eval: v => (v && v !== "(-)") ? "cell-warn" : "cell-good" },
+      { key: "uProtein", label: "尿蛋白", cat: "尿検査", unit: "", ref: "(-)", eval: v => (v && v !== "(-)") ? "cell-warn" : "cell-good" },
+      { key: "uBlood",   label: "尿潜血", cat: "尿検査", unit: "", ref: "(-)", eval: v => (v && v !== "(-)") ? "cell-warn" : "cell-good" },
+
+      { key: "wbc",  label: "白血球数 (WBC)", cat: "血球計数", unit: "/μl", ref: "3500〜9800", eval: v => v < 3500 ? "cell-warn" : "cell-good" },
+      { key: "rbc",  label: "赤血球数 (RBC)", cat: "血球計数", unit: "万/μl", ref: "425〜570", eval: v => (v < 425 || v > 570) ? "cell-warn" : "cell-good" },
+      { key: "hb",   label: "血色素量 (Hb)", cat: "血球計数", unit: "g/dl", ref: "13.3〜17.4", eval: v => v < 13.1 ? "cell-warn" : "cell-good" },
+      { key: "ht",   label: "ヘマトクリット値 (Ht)", cat: "血球計数", unit: "%", ref: "39.0〜51.8", eval: v => (v < 39.0 || v > 51.8) ? "cell-warn" : "cell-good" },
+      { key: "mcv",  label: "平均赤血球容積 (MCV)", cat: "血球計数", unit: "fL", ref: "80.0〜100.0", eval: v => (v < 80 || v > 102) ? "cell-warn" : "cell-good" },
+      { key: "mch",  label: "平均赤血球血色素量 (MCH)", cat: "血球計数", unit: "pg", ref: "26.0〜34.6", eval: () => "cell-good" },
+      { key: "mchc", label: "平均赤血球血色素濃度 (MCHC)", cat: "血球計数", unit: "%", ref: "31.6〜36.6", eval: () => "cell-good" },
+      { key: "plt",  label: "血小板数 (PLT)", cat: "血球計数", unit: "万/μl", ref: "14.0〜38.0", eval: () => "cell-good" },
+
+      { key: "cavi",     label: "血管年齢 (CAVI / ABI / AI)", cat: "専門ドック所見", unit: "", ref: "CAVI 8.0未満 / ABI 1.0〜1.4", eval: () => "cell-good" },
+      { key: "lung",     label: "肺機能 (肺活量・1秒率・肺年齢)", cat: "専門ドック所見", unit: "", ref: "%肺活量80%以上 / 1秒率70%以上", eval: () => "cell-good" },
+      { key: "ecg",      label: "安静時心電図", cat: "専門ドック所見", unit: "", ref: "-", eval: () => "" },
+      { key: "imaging",  label: "胃部X線・腹部エコー・胸部・眼底", cat: "専門ドック所見", unit: "", ref: "-", eval: () => "" },
+      { key: "judgment", label: "医師判定・献血記録まとめ", cat: "専門ドック所見", unit: "", ref: "-", eval: () => "" }
+    ];
+
+    function renderCheckupTab(liveCurrent = null) {
+      try {
+        updateCheckupDropdown();
+        const sortedAsc = [...checkupRecords].sort((a, b) => a.date.localeCompare(b.date));
+        const sortedDesc = [...sortedAsc].reverse();
+
+        const curStats = liveCurrent || { weight: 53.5, bmi: 21.9, fatPct: 20.7, sbp: 113, dbp: 70, pulse: 58 };
+        const bpRecs = sortedAsc.filter(r => r.sbp !== null && r.sbp !== undefined);
+        const labelsBp = [...bpRecs.map(r => `${r.date.slice(0,7)}(${r.age}歳)`), '2026-10現在(日常)'];
+        const labelsAll = sortedAsc.map(r => `${r.date.slice(0,7)}(${r.age}歳)`);
+
+        renderChart('chart-ck-bp', {
+          type: 'line',
+          data: {
+            labels: labelsBp,
+            datasets: [
+              { label: '収縮期血圧・上 (mmHg)', data: [...bpRecs.map(r => r.sbp), curStats.sbp], borderColor: '#ef4444', backgroundColor: 'rgba(239,68,68,0.15)', tension: 0.2, pointRadius: 4, spanGaps: true },
+              { label: '拡張期血圧・下 (mmHg)', data: [...bpRecs.map(r => r.dbp), curStats.dbp], borderColor: '#3b82f6', backgroundColor: 'rgba(59,130,246,0.15)', tension: 0.2, pointRadius: 4, spanGaps: true },
+              { label: '上・受診勧奨 (140)', data: labelsBp.map(() => 140), borderColor: 'rgba(239,68,68,0.45)', borderDash: [4,4], pointRadius: 0 },
+              { label: '下・受診勧奨 (90)', data: labelsBp.map(() => 90), borderColor: 'rgba(59,130,246,0.45)', borderDash: [4,4], pointRadius: 0 }
+            ]
+          },
+          options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 55, max: 175 } } }
+        });
+
+        renderChart('chart-ck-lipid', {
+          type: 'line',
+          data: {
+            labels: labelsAll,
+            datasets: [
+              { label: '総コレステロール (献血・ドック)', data: sortedAsc.map(r => r.tc), borderColor: '#a855f7', backgroundColor: '#a855f7', tension: 0.2, pointRadius: 4, spanGaps: true },
+              { label: 'LDLコレステロール (基準120未満)', data: sortedAsc.map(r => r.ldl), borderColor: '#f59e0b', backgroundColor: '#f59e0b', tension: 0.2, pointRadius: 4, spanGaps: true },
+              { label: '空腹時中性脂肪 (基準150未満)', data: sortedAsc.map(r => r.tg), borderColor: '#3b82f6', backgroundColor: '#3b82f6', tension: 0.2, pointRadius: 4, spanGaps: true },
+              { label: 'HDLコレステロール (基準40以上)', data: sortedAsc.map(r => r.hdl), borderColor: '#10b981', backgroundColor: '#10b981', tension: 0.2, pointRadius: 4, spanGaps: true }
+            ]
+          },
+          options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 40, max: 270 } } }
+        });
+
+        renderChart('chart-ck-glucose', {
+          type: 'bar',
+          data: {
+            labels: labelsAll,
+            datasets: [
+              { label: '空腹時血糖 (mg/dL・左軸)', data: sortedAsc.map(r => r.fbg), backgroundColor: 'rgba(59,130,246,0.65)', yAxisID: 'y' },
+              { label: 'HbA1c (%・右軸)', data: sortedAsc.map(r => r.hba1c), type: 'line', borderColor: '#10b981', backgroundColor: '#10b981', pointRadius: 5, yAxisID: 'y1', spanGaps: true },
+              { label: '献血グリコアルブミン GA (%・右軸)', data: sortedAsc.map(r => r.ga), type: 'line', borderColor: '#f59e0b', backgroundColor: '#f59e0b', borderDash: [4,4], pointRadius: 4, yAxisID: 'y1', spanGaps: true }
+            ]
+          },
+          options: {
+            responsive: true, maintainAspectRatio: false,
+            scales: {
+              y: { type: 'linear', position: 'left', min: 65, max: 125, title: { display: true, text: '空腹時血糖 (mg/dL)' } },
+              y1: { type: 'linear', position: 'right', min: 4.5, max: 17.5, grid: { drawOnChartArea: false }, title: { display: true, text: 'HbA1c(%) / GA(%)' } }
+            }
+          }
+        });
+
+        renderChart('chart-ck-liver', {
+          type: 'line',
+          data: {
+            labels: labelsAll,
+            datasets: [
+              { label: 'γ-GTP (基準51未満)', data: sortedAsc.map(r => r.ggtp), borderColor: '#f59e0b', backgroundColor: '#f59e0b', tension: 0.2, pointRadius: 5, spanGaps: true },
+              { label: 'ALT / GPT (基準31未満)', data: sortedAsc.map(r => r.alt), borderColor: '#10b981', backgroundColor: '#10b981', tension: 0.2, pointRadius: 4, spanGaps: true },
+              { label: 'AST / GOT (基準31未満)', data: sortedAsc.map(r => r.ast), borderColor: '#3b82f6', backgroundColor: '#3b82f6', tension: 0.2, pointRadius: 4, spanGaps: true },
+              { label: 'γ-GTP基準上限 (51)', data: labelsAll.map(() => 51), borderColor: 'rgba(239,68,68,0.5)', borderDash: [4,4], pointRadius: 0 }
+            ]
+          },
+          options: { responsive: true, maintainAspectRatio: false, scales: { y: { min: 0, max: 65 } } }
+        });
+
+        const thead = document.querySelector('#checkup-matrix-table thead');
+        const tbody = document.querySelector('#checkup-matrix-table tbody');
+
+        thead.innerHTML = `
+          <tr>
+            <th class="cat-col">カテゴリ</th>
+            <th class="item-col">検査項目</th>
+            <th>基準値</th>
+            <th style="background:rgba(16,185,129,0.22);color:#34d399;">2026-10 現在<br><span style="font-size:0.68rem;">日常測定平均</span></th>
+            ${sortedDesc.map((r, i) => `<th>${r.date}<br><span style="font-size:0.68rem;color:#cbd5e1;">${r.age || ''}歳 ${i === 0 ? '★最新採血' : ''}</span></th>`).join('')}
+          </tr>
+        `;
+
+        const nowColMap = {
+          clinic: "自宅InBody / 血圧計",
+          height: 158.8,
+          weight: curStats.weight,
+          waist: 77.0,
+          bmi: curStats.bmi,
+          fatPct: curStats.fatPct,
+          sbp: curStats.sbp,
+          dbp: curStats.dbp,
+          pulse: curStats.pulse
+        };
+
+        tbody.innerHTML = METRIC_ROWS.map(m => {
+          const vals = sortedDesc.map(r => r[m.key]);
+          const nowVal = nowColMap[m.key];
+
+          const nowCellHtml = (nowVal !== undefined && nowVal !== null)
+            ? `<td class="${m.eval(nowVal)}" style="background:rgba(16,185,129,0.08);white-space:nowrap;"><b>${nowVal}</b> ${typeof nowVal === 'number' && m.unit ? `<span style="font-size:0.66rem;">${m.unit}</span>` : ''}</td>`
+            : `<td style="color:#475569;background:rgba(16,185,129,0.03);">---</td>`;
+
+          return `
+            <tr>
+              <td class="cat-col">${m.cat}</td>
+              <td class="item-col"><b>${m.label}</b> ${m.unit ? `<span style="font-size:0.68rem;color:var(--sub);">[${m.unit}]</span>` : ''}</td>
+              <td style="font-size:0.72rem; color:var(--sub); white-space:nowrap;">${m.ref}</td>
+              ${nowCellHtml}
+              ${vals.map(v => {
+                if (v === null || v === undefined || v === '') {
+                  return `<td style="color:#475569;">---</td>`;
+                }
+                const cls = typeof v === 'number' || typeof v === 'string' ? m.eval(v) : '';
+                return `<td class="${cls}" style="min-width:105px;">${v} ${typeof v === 'number' && m.unit ? `<span style="font-size:0.66rem;opacity:0.75;">${m.unit}</span>` : ''}</td>`;
+              }).join('')}
+            </tr>
+          `;
+        }).join('');
+      } catch(e) {}
+    }
+
+    function renderChart(id, config) {
+      const el = document.getElementById(id);
+      if (!el) return;
+      if (charts[id]) charts[id].destroy();
+      charts[id] = new Chart(el.getContext('2d'), config);
+    }
+  </script>
+</body>
+</html>
