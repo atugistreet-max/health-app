@@ -2249,6 +2249,104 @@
       if (charts[id]) charts[id].destroy();
       charts[id] = new Chart(el.getContext('2d'), config);
     }
+// ===== AI(Muse等)転記データ自動クレンジング ＆ リアルタイム同期パッチ =====
+  (function() {
+    // 1. どんな日付表記でも「YYYY-MM-DD」に自動変換する関数
+    function cleanAiDate(val) {
+      if (val === null || val === undefined) return '';
+      let s = String(val).trim()
+        .replace(/^[’'”"\s]+/, '') // 先頭のアポストロフィや空白を除去
+        .replace(/[０-９]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0)) // 全角数字→半角
+        .replace(/[／．年月]/g, '-')
+        .replace(/日/g, '');
+
+      // GVizの Date(2026,10,2) 形式
+      let dm = s.match(/Date\((\d+),(\d+),(\d+)/);
+      if (dm) {
+        return `${dm[1]}-${('0' + (parseInt(dm[2], 10) + 1)).slice(-2)}-${('0' + dm[3]).slice(-2)}`;
+      }
+      // 2026-11-2 などの年・月・日形式
+      let mFull = s.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
+      if (mFull) {
+        return `${mFull[1]}-${('0' + mFull[2]).slice(-2)}-${('0' + mFull[3]).slice(-2)}`;
+      }
+      // 「11/2」や「11-02」のように年が省略されている場合は現在の年(2026)を自動補完
+      let mShort = s.match(/^(\d{1,2})[-/](\d{1,2})(?:\s|$|\()/);
+      if (mShort) {
+        const yr = new Date().getFullYear();
+        return `${yr}-${('0' + mShort[1]).slice(-2)}-${('0' + mShort[2]).slice(-2)}`;
+      }
+      return val;
+    }
+
+    // 2. 単位付きの文字列（"52.6kg", "1,520 kcal", "91.0%" 等）から数値だけを抽出する関数
+    function cleanAiValue(val, colKey) {
+      if (val === null || val === undefined) return val;
+      if (typeof val === 'number') return val;
+      let s = String(val).trim();
+      if (!s) return '';
+
+      // 日付っぽい列や日付文字列は日付として正規化
+      if (/date|日付|年月日/i.test(colKey || '') || /^\d{4}[-/年]\d{1,2}[-/月]\d{1,2}/.test(s) || /^\d{1,2}[-/月]\d{1,2}日?$/.test(s)) {
+        return cleanAiDate(s);
+      }
+
+      // 全角数字・記号を半角に統一
+      let norm = s.replace(/[０-９．－]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0)).replace(/,/g, '');
+
+      // 「6時間30分」のような睡眠時間表記を「6.5」時間に自動変換
+      let hm = norm.match(/^(\d+)\s*時間\s*(\d+)\s*分/);
+      if (hm) {
+        return String(+(parseInt(hm[1], 10) + parseInt(hm[2], 10) / 60).toFixed(2));
+      }
+
+      // 先頭が数値＋単位（例: "52.6 kg", "1527kcal", "115 mmHg", "76.9点"）なら数値のみ抽出
+      // ※「115/71」のようなスラッシュ区切り血圧データはそのまま残す
+      if (!norm.includes('/') && !norm.includes(':')) {
+        let numMatch = norm.match(/^([+-]?\d+(?:\.\d+)?)\s*(?:kg|kcal|g|mg|mmhg|bpm|%|％|点|時間|h|分|回|歩|歳|cm|l|ml)?$/i);
+        if (numMatch) {
+          return numMatch[1];
+        }
+      }
+      return s;
+    }
+
+    // 3. Papa.parse（CSV解析）をフックして、読み込んだ全セルを自動クレンジング
+    if (window.Papa && window.Papa.parse) {
+      const origParse = window.Papa.parse;
+      window.Papa.parse = function(input, config) {
+        const res = origParse.call(this, input, config);
+        if (res && Array.isArray(res.data)) {
+          res.data = res.data.map(row => {
+            if (Array.isArray(row)) {
+              return row.map((cell, idx) => idx === 0 ? cleanAiDate(cell) : cleanAiValue(cell, ''));
+            } else if (row && typeof row === 'object') {
+              const cleaned = {};
+              Object.keys(row).forEach(k => {
+                const cleanKey = k.trim();
+                cleaned[cleanKey] = cleanAiValue(row[k], cleanKey);
+              });
+              return cleaned;
+            }
+            return row;
+          });
+        }
+        return res;
+      };
+    }
+
+    // 4. スプレッドシート通信時のキャッシュを完全無効化（常に最新の11月2日データを取得）
+    const origFetch = window.fetch;
+    window.fetch = function(url, options = {}) {
+      if (typeof url === 'string' && url.includes('docs.google.com/spreadsheets')) {
+        const sep = url.includes('?') ? '&' : '?';
+        const bustUrl = `${url}${sep}_cb=${Date.now()}`;
+        options.cache = 'no-store';
+        return origFetch(bustUrl, options);
+      }
+      return origFetch(url, options);
+    };
+  })();
   </script>
 </body>
 </html>
