@@ -1,7 +1,9 @@
 <!DOCTYPE html>
 <html lang="ja">
 <head>
-  <!-- OGP（noteやSNS用のサムネイル設定） -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>健康状態 統合管理デスクトップアプリ</title>
   <meta property="og:title" content="健康状態 統合管理デスクトップアプリ">
   <meta property="og:description" content="体組成・栄養・睡眠・血圧と18年間の人間ドック・健診・献血データを統合管理">
   <meta property="og:image" content="https://atugistreet-max.github.io/health-app/ogp.png">
@@ -9,7 +11,6 @@
   <meta property="og:type" content="website">
   <meta name="twitter:card" content="summary_large_image">
 
-  <!-- Google Analytics (GA4) -->
   <script async src="https://www.googletagmanager.com/gtag/js?id=G-ZKVVRD15VN"></script>
   <script>
     window.dataLayer = window.dataLayer || [];
@@ -18,127 +19,65 @@
     gtag('config', 'G-ZKVVRD15VN');
   </script>
 
-  <meta charset="UTF-8">
-  <meta name="viewport" content="width=device-width, initial-scale=1.0">
-  <title>健康状態 統合管理デスクトップアプリ</title>
   <script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
   <script src="https://cdn.jsdelivr.net/npm/papaparse@5.4.1/papaparse.min.js"></script>
   <style>
     :root {
-      --bg: #0f172a;
-      --panel: #1e293b;
-      --card: #334155;
-      --text: #f8fafc;
-      --sub: #94a3b8;
-      --primary: #3b82f6;
-      --accent: #10b981;
-      --warn: #f59e0b;
-      --danger: #ef4444;
-      --border: #475569;
+      --bg: #0f172a; --panel: #1e293b; --card: #334155; --text: #f8fafc;
+      --sub: #94a3b8; --primary: #3b82f6; --accent: #10b981; --warn: #f59e0b; --danger: #ef4444; --border: #475569;
     }
     * { box-sizing: border-box; }
     html, body {
-      margin: 0; padding: 0;
-      width: 100%; max-width: 100vw; overflow-x: hidden;
+      margin: 0; padding: 0; width: 100%; max-width: 100vw; overflow-x: hidden;
       font-family: "Segoe UI", "Meiryo", "Hiragino Sans", sans-serif;
       background: var(--bg); color: var(--text);
     }
     .top-bar {
-      background: var(--panel);
-      border-bottom: 1px solid var(--border);
-      padding: 12px 18px;
-      display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px;
-      position: sticky; top: 0; z-index: 100;
-      box-shadow: 0 4px 12px rgba(0,0,0,0.25);
+      background: var(--panel); border-bottom: 1px solid var(--border);
+      padding: 12px 18px; display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 10px;
+      position: sticky; top: 0; z-index: 100; box-shadow: 0 4px 12px rgba(0,0,0,0.25);
     }
     .brand-row { display: flex; align-items: center; gap: 10px; flex-wrap: wrap; }
     .brand-row h1 { font-size: 1.2rem; margin: 0; font-weight: 700; }
-    .badge {
-      padding: 4px 10px; border-radius: 999px; font-size: 0.76rem; font-weight: 600;
-      display: inline-flex; align-items: center; gap: 4px; white-space: nowrap;
-    }
+    .badge { padding: 4px 10px; border-radius: 999px; font-size: 0.76rem; font-weight: 600; display: inline-flex; align-items: center; gap: 4px; white-space: nowrap; }
     .badge-sync { background: rgba(16, 185, 129, 0.18); color: #34d399; border: 1px solid rgba(16, 185, 129, 0.45); }
     .badge-sobriety { background: rgba(59, 130, 246, 0.18); color: #60a5fa; border: 1px solid rgba(59, 130, 246, 0.45); }
     .badge-smoke { background: rgba(245, 158, 11, 0.18); color: #fbbf24; border: 1px solid rgba(245, 158, 11, 0.45); }
-
     .controls-row { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; margin-top: 8px; width: 100%; }
-    .period-group {
-      display: inline-flex; background: var(--bg); padding: 3px; border-radius: 8px; border: 1px solid var(--border);
-    }
-    .period-btn {
-      background: transparent; color: var(--sub); border: none; padding: 6px 12px;
-      border-radius: 6px; font-weight: 600; font-size: 0.8rem; cursor: pointer;
-    }
+    .period-group { display: inline-flex; background: var(--bg); padding: 3px; border-radius: 8px; border: 1px solid var(--border); }
+    .period-btn { background: transparent; color: var(--sub); border: none; padding: 6px 12px; border-radius: 6px; font-weight: 600; font-size: 0.8rem; cursor: pointer; }
     .period-btn.active { background: var(--primary); color: #fff; }
-    .btn {
-      background: var(--card); color: var(--text); border: 1px solid var(--border);
-      padding: 7px 13px; border-radius: 8px; font-size: 0.8rem; font-weight: 600;
-      cursor: pointer; display: inline-flex; align-items: center; gap: 6px;
-    }
+    .btn { background: var(--card); color: var(--text); border: 1px solid var(--border); padding: 7px 13px; border-radius: 8px; font-size: 0.8rem; font-weight: 600; cursor: pointer; display: inline-flex; align-items: center; gap: 6px; }
     .btn:hover { background: #475569; }
     .btn-green { background: var(--accent); border-color: #059669; color: #fff; }
     .btn-green:hover { background: #059669; }
-
     .container { padding: 14px 18px; max-width: 1600px; margin: 0 auto; }
-
-    .sync-panel {
-      background: var(--panel); border: 1px solid var(--primary); border-radius: 10px;
-      padding: 14px; margin-bottom: 16px; display: none;
-    }
+    .sync-panel { background: var(--panel); border: 1px solid var(--primary); border-radius: 10px; padding: 14px; margin-bottom: 16px; display: none; }
     .sync-panel.open { display: block; }
-    .url-grid { display: grid; grid-template-columns: 110px 1fr; gap: 8px; align-items: center; font-size: 0.8rem; margin: 10px 0; }
-    .url-grid input {
-      width: 100%; padding: 6px 10px; background: var(--bg); border: 1px solid var(--border);
-      color: var(--text); border-radius: 6px; font-size: 0.8rem;
-    }
-
-    .kpi-grid {
-      display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr));
-      gap: 12px; margin-bottom: 16px;
-    }
-    .kpi-card {
-      background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
-      padding: 12px 14px; box-shadow: 0 2px 6px rgba(0,0,0,0.18);
-    }
+    .url-grid { display: grid; grid-template-columns: 125px 1fr; gap: 8px; align-items: center; font-size: 0.8rem; margin: 10px 0; }
+    .url-grid input { width: 100%; padding: 6px 10px; background: var(--bg); border: 1px solid var(--border); color: var(--text); border-radius: 6px; font-size: 0.8rem; }
+    .kpi-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 12px; margin-bottom: 16px; }
+    .kpi-card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 12px 14px; box-shadow: 0 2px 6px rgba(0,0,0,0.18); }
     .kpi-head { display: flex; justify-content: space-between; font-size: 0.76rem; color: var(--sub); margin-bottom: 6px; }
     .kpi-val { font-size: 1.35rem; font-weight: 700; margin-bottom: 4px; }
     .kpi-sub { font-size: 0.74rem; color: #cbd5e1; }
-
     .nav-tabs { display: flex; gap: 8px; margin-bottom: 16px; flex-wrap: wrap; }
-    .tab-btn {
-      background: var(--panel); color: var(--sub); border: 1px solid var(--border);
-      padding: 8px 15px; border-radius: 8px; font-weight: 600; font-size: 0.83rem; cursor: pointer;
-    }
+    .tab-btn { background: var(--panel); color: var(--sub); border: 1px solid var(--border); padding: 8px 15px; border-radius: 8px; font-weight: 600; font-size: 0.83rem; cursor: pointer; }
     .tab-btn.active { background: var(--primary); color: #fff; border-color: #60a5fa; }
     .tab-btn.dock-btn { border-color: rgba(16, 185, 129, 0.5); color: #34d399; }
     .tab-btn.dock-btn.active { background: #059669; color: #fff; }
-
-    .charts-grid {
-      display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px;
-    }
+    .charts-grid { display: grid; grid-template-columns: repeat(2, minmax(0, 1fr)); gap: 14px; margin-bottom: 18px; }
     @media (max-width: 1024px) { .charts-grid { grid-template-columns: 1fr; } }
-    .chart-card {
-      background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px;
-    }
+    .chart-card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px; }
     .chart-header { display: flex; justify-content: space-between; align-items: center; margin-bottom: 10px; flex-wrap: wrap; gap: 6px; }
     .chart-header h3 { font-size: 0.9rem; margin: 0; color: #e2e8f0; }
     .chart-wrap { position: relative; height: 280px; width: 100%; }
-
-    .table-card {
-      background: var(--panel); border: 1px solid var(--border); border-radius: 10px;
-      padding: 14px; margin-bottom: 16px; overflow-x: auto;
-    }
+    .table-card { background: var(--panel); border: 1px solid var(--border); border-radius: 10px; padding: 14px; margin-bottom: 16px; overflow-x: auto; }
     table { width: 100%; border-collapse: collapse; font-size: 0.8rem; }
     th, td { padding: 7px 9px; text-align: left; border-bottom: 1px solid rgba(71, 85, 105, 0.5); white-space: nowrap; }
     th { background: rgba(15, 23, 42, 0.6); color: #93c5fd; font-weight: 600; }
     tr:hover td { background: rgba(51, 65, 85, 0.35); }
-
-    #toast-box {
-      position: fixed; bottom: 20px; right: 20px;
-      background: rgba(6, 78, 59, 0.96); border: 1px solid #10b981; color: #ecfdf5;
-      padding: 10px 16px; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.45);
-      z-index: 9999; display: none; font-size: 0.84rem;
-    }
+    #toast-box { position: fixed; bottom: 20px; right: 20px; background: rgba(6, 78, 59, 0.96); border: 1px solid #10b981; color: #ecfdf5; padding: 10px 16px; border-radius: 10px; box-shadow: 0 8px 24px rgba(0,0,0,0.45); z-index: 9999; display: none; font-size: 0.84rem; }
   </style>
 </head>
 <body>
@@ -172,15 +111,12 @@
   </header>
 
   <main class="container">
-    <!-- 連動設定パネル -->
     <section class="sync-panel" id="sync-panel">
       <div style="display:flex; justify-content:space-between; align-items:center;">
         <h3 style="margin:0; font-size:0.95rem; color:#60a5fa;">🔗 Googleスプレッドシート リアルタイム連動設定</h3>
         <button class="btn" onclick="toggleSyncPanel()" style="padding:4px 9px;">✕ 閉じる</button>
       </div>
-      <p style="font-size:0.78rem; color:var(--sub); margin:6px 0;">
-        各スプレッドシートのURL（通常の編集URL `/edit` または公開CSV URL）を登録すると、キャッシュ遅延なしで最新行まで自動同期します。
-      </p>
+      <p style="font-size:0.78rem; color:var(--sub); margin:6px 0;">各スプレッドシートのURLを登録すると、キャッシュ遅延なしで最新行まで自動同期します。</p>
       <div class="url-grid">
         <span>① 体組成シート:</span><input type="text" id="url-body" placeholder="体組成記録スプレッドシートURL">
         <span>② 栄養管理シート:</span><input type="text" id="url-nutr" placeholder="栄養記録スプレッドシートURL">
@@ -193,7 +129,6 @@
       </div>
     </section>
 
-    <!-- KPIカード -->
     <section class="kpi-grid">
       <div class="kpi-card">
         <div class="kpi-head"><span>期間平均 体重 / BMI</span><span>⚖️</span></div>
@@ -203,7 +138,7 @@
       <div class="kpi-card">
         <div class="kpi-head"><span>骨格筋量 / 体脂肪率</span><span>💪</span></div>
         <div class="kpi-val" id="kpi-muscle">-- kg / -- %</div>
-        <div class="kpi-sub" id="kpi-muscle-sub">InBody点数 平均: -- 点 (最新: --%)</div>
+        <div class="kpi-sub" id="kpi-muscle-sub">InBody点数 平均: -- 点</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-head"><span>平均 カロリー収支 (摂取-消費)</span><span>🔥</span></div>
@@ -211,9 +146,9 @@
         <div class="kpi-sub" id="kpi-cal-sub">摂取: -- kcal / 消費: -- kcal</div>
       </div>
       <div class="kpi-card">
-        <div class="kpi-head"><span>平均 タンパク質 / 食物繊維</span><span>🥗</span></div>
+        <div class="kpi-head"><span>平均 タンパク質 / 脂質</span><span>🥗</span></div>
         <div class="kpi-val" id="kpi-prot">-- g / -- g</div>
-        <div class="kpi-sub" id="kpi-prot-sub">平均塩分: -- g/日</div>
+        <div class="kpi-sub" id="kpi-prot-sub">平均炭水化物: -- g/日</div>
       </div>
       <div class="kpi-card">
         <div class="kpi-head"><span>平均 睡眠時間 (睡眠スコア)</span><span>🌙</span></div>
@@ -223,18 +158,16 @@
       <div class="kpi-card">
         <div class="kpi-head"><span>期間平均 血圧 (上/下) ・ 脈拍</span><span>💓</span></div>
         <div class="kpi-val" id="kpi-bp">-- / -- mmHg</div>
-        <div class="kpi-sub" id="kpi-bp-sub">平均脈拍: -- bpm (全測定)</div>
+        <div class="kpi-sub" id="kpi-bp-sub">平均脈拍: -- bpm</div>
       </div>
     </section>
 
-    <!-- ナビゲーションタブ -->
     <nav class="nav-tabs">
       <button class="tab-btn active" onclick="switchTab('dashboard', this)">📊 総合ダッシュボード (6大グラフ)</button>
       <button class="tab-btn" onclick="switchTab('daily', this)">📋 日次データ一覧・検索</button>
       <button class="tab-btn dock-btn" onclick="switchTab('dock', this)">🩺 人間ドック・健診・献血分析 (2008〜2026 全19回統合＆マージ)</button>
     </nav>
 
-    <!-- タブ1: 総合ダッシュボード -->
     <div id="tab-dashboard">
       <div class="charts-grid">
         <div class="chart-card">
@@ -247,7 +180,7 @@
 
         <div class="chart-card">
           <div class="chart-header">
-            <h3>② 栄養・カロリー収支推移（摂取カロリー・消費カロリー・カロリー収支）</h3>
+            <h3>② 栄養・カロリー収支推移（摂取・消費カロリー＆収支折れ線）</h3>
           </div>
           <div class="chart-wrap"><canvas id="chart-cal"></canvas></div>
         </div>
@@ -261,14 +194,14 @@
 
         <div class="chart-card">
           <div class="chart-header">
-            <h3>④ PFC・主要栄養素バランス推移（タンパク質・脂質・食物繊維・塩分）</h3>
+            <h3>④ PFCバランス推移（タンパク質・脂質・炭水化物 積上グラフ）</h3>
           </div>
           <div class="chart-wrap"><canvas id="chart-pfc"></canvas></div>
         </div>
 
         <div class="chart-card">
           <div class="chart-header">
-            <h3>⑤ 睡眠時間・睡眠スコア推移（Fitbit Inspire 3）</h3>
+            <h3>⑤ 睡眠構成・スコア推移（深い・レム・浅い睡眠 積上 ＆ スコア）</h3>
           </div>
           <div class="chart-wrap"><canvas id="chart-sleep"></canvas></div>
         </div>
@@ -282,12 +215,11 @@
       </div>
     </div>
 
-    <!-- タブ2: 日次データ一覧 -->
     <div id="tab-daily" style="display:none;">
       <div class="table-card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
-          <h3 style="margin:0;">📋 日次統合データ一覧（体組成・栄養・睡眠・血圧・握力）</h3>
-          <input type="search" id="daily-search" placeholder="日付やメモで検索 (例: 2026-11-04)..." oninput="renderDailyTable()" style="padding:6px 10px; background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:6px;">
+          <h3 style="margin:0;">📋 日次統合データ一覧</h3>
+          <input type="search" id="daily-search" placeholder="日付やメモで検索..." oninput="renderDailyTable()" style="padding:6px 10px; background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:6px;">
         </div>
         <div style="max-height:540px; overflow-y:auto;">
           <table id="table-daily">
@@ -297,14 +229,14 @@
                 <th>体重(kg)</th>
                 <th>骨格筋(kg)</th>
                 <th>体脂肪率(%)</th>
-                <th>InBody点</th>
+                <th>点数</th>
                 <th>BMI</th>
-                <th>握力(右/左)</th>
                 <th>摂取(kcal)</th>
                 <th>消費(kcal)</th>
-                <th>蛋白(g)</th>
-                <th>食物繊維(g)</th>
-                <th>塩分(g)</th>
+                <th>収支(kcal)</th>
+                <th>炭水化物(g)</th>
+                <th>タンパク質(g)</th>
+                <th>脂質(g)</th>
                 <th>睡眠(h)</th>
                 <th>スコア</th>
                 <th>血圧(上/下)</th>
@@ -317,18 +249,17 @@
       </div>
     </div>
 
-    <!-- タブ3: 人間ドック・健診・献血 18年経年分析 -->
     <div id="tab-dock" style="display:none;">
       <div class="charts-grid">
         <div class="chart-card">
           <div class="chart-header">
-            <h3>🩺 肝機能・脂質・血糖 18年推移（γ-GTP / LDLコレステロール / HbA1c）</h3>
+            <h3>🩺 肝機能・脂質・血糖 18年推移</h3>
           </div>
           <div class="chart-wrap"><canvas id="chart-dock-1"></canvas></div>
         </div>
         <div class="chart-card">
           <div class="chart-header">
-            <h3>🩺 体重・腹囲・血圧 18年推移（2008年〜2026年 全19回）</h3>
+            <h3>🩺 体重・腹囲・血圧 18年推移</h3>
           </div>
           <div class="chart-wrap"><canvas id="chart-dock-2"></canvas></div>
         </div>
@@ -338,18 +269,8 @@
         <table id="table-dock">
           <thead>
             <tr>
-              <th>検査日</th>
-              <th>種別</th>
-              <th>体重(kg)</th>
-              <th>腹囲(cm)</th>
-              <th>血圧(上/下)</th>
-              <th>AST(GOT)</th>
-              <th>ALT(GPT)</th>
-              <th>γ-GTP</th>
-              <th>LDL</th>
-              <th>HDL</th>
-              <th>中性脂肪</th>
-              <th>空腹時血糖 / HbA1c</th>
+              <th>検査日</th><th>種別</th><th>体重(kg)</th><th>腹囲(cm)</th><th>血圧(上/下)</th>
+              <th>AST</th><th>ALT</th><th>γ-GTP</th><th>LDL</th><th>HDL</th><th>中性脂肪</th><th>HbA1c</th>
             </tr>
           </thead>
           <tbody></tbody>
@@ -362,7 +283,6 @@
     Chart.defaults.color = '#94a3b8';
     Chart.defaults.borderColor = 'rgba(71, 85, 105, 0.35)';
 
-    // デフォルトのスプレッドシートURL（体組成記録シートのIDを標準内蔵）
     const DEFAULT_SHEET_URLS = {
       body:  "https://docs.google.com/spreadsheets/d/1FSdAN6fJL7TKezFrrXfEXRooWL7Nn6Uxyh-XY84zos4/edit?gid=0",
       nutr:  "",
@@ -370,39 +290,38 @@
       bp:    ""
     };
 
-    // 初期フォールバックデータ（万一オフラインでも10/01〜11/04まで確実に表示）
     const EMBEDDED_BODY_ROWS = [
-      { date: "2026-10-05", weight: 54.1, muscle: 23.8, fatPct: 20.9, score: 74, bmi: 21.9, pulse: 58, temp: 36.4, spo2: 98 },
-      { date: "2026-10-06", weight: 54.4, muscle: 23.7, fatPct: 21.2, score: 74, bmi: 22.0, pulse: 58, temp: 36.5, spo2: 98 },
-      { date: "2026-10-07", weight: 54.0, muscle: 23.6, fatPct: 21.0, score: 74, bmi: 21.9, pulse: 57, temp: 36.4, spo2: 98 },
-      { date: "2026-10-08", weight: 53.7, muscle: 23.5, fatPct: 21.0, score: 74, bmi: 21.8, pulse: 58, temp: 36.5, spo2: 98 },
-      { date: "2026-10-09", weight: 53.7, muscle: 23.4, fatPct: 21.1, score: 73, bmi: 21.8, pulse: 59, temp: 36.4, spo2: 98 },
-      { date: "2026-10-10", weight: 54.1, muscle: 23.8, fatPct: 19.9, score: 75, bmi: 21.9, pulse: 57, temp: 36.5, spo2: 98 },
-      { date: "2026-10-11", weight: 54.0, muscle: 23.6, fatPct: 20.5, score: 74, bmi: 21.9, pulse: 58, temp: 36.5, spo2: 98 },
-      { date: "2026-10-12", weight: 54.0, muscle: 23.5, fatPct: 21.0, score: 74, bmi: 21.9, pulse: 58, temp: 36.4, spo2: 98 },
-      { date: "2026-10-13", weight: 54.3, muscle: 23.7, fatPct: 20.9, score: 74, bmi: 22.0, pulse: 58, temp: 36.4, spo2: 98 },
-      { date: "2026-10-14", weight: 53.7, muscle: 23.5, fatPct: 20.8, score: 74, bmi: 21.8, pulse: 57, temp: 36.5, spo2: 98 },
-      { date: "2026-10-15", weight: 53.7, muscle: 23.5, fatPct: 20.8, score: 74, bmi: 21.8, pulse: 58, temp: 36.4, spo2: 98 },
-      { date: "2026-10-16", weight: 53.9, muscle: 23.5, fatPct: 20.9, score: 74, bmi: 21.8, pulse: 58, temp: 36.4, spo2: 98 },
-      { date: "2026-10-17", weight: 53.7, muscle: 23.6, fatPct: 19.8, score: 74, bmi: 21.8, pulse: 57, temp: 36.5, spo2: 98 },
-      { date: "2026-10-18", weight: 53.7, muscle: 23.6, fatPct: 19.8, score: 74, bmi: 21.8, pulse: 58, temp: 36.5, spo2: 98 },
-      { date: "2026-10-19", weight: 53.4, muscle: 23.4, fatPct: 20.4, score: 74, bmi: 21.6, pulse: 58, temp: 36.4, spo2: 98 },
-      { date: "2026-10-20", weight: 53.9, muscle: 23.6, fatPct: 20.2, score: 74, bmi: 21.8, pulse: 57, temp: 36.5, spo2: 98 },
-      { date: "2026-10-21", weight: 53.5, muscle: 23.5, fatPct: 20.2, score: 74, bmi: 21.7, pulse: 58, temp: 36.4, spo2: 98 },
-      { date: "2026-10-22", weight: 53.4, muscle: 23.5, fatPct: 20.0, score: 74, bmi: 21.6, pulse: 57, temp: 36.4, spo2: 98 },
-      { date: "2026-10-23", weight: 53.5, muscle: 23.6, fatPct: 20.1, score: 74, bmi: 21.7, pulse: 57, temp: 36.3, spo2: 99 },
-      { date: "2026-10-24", weight: 53.7, muscle: 23.5, fatPct: 20.5, score: 74, bmi: 21.8, pulse: 57, temp: 36.6, spo2: 98 },
-      { date: "2026-10-25", weight: 52.8, muscle: 23.5, fatPct: 19.5, score: 74, bmi: 21.4, pulse: 60, temp: 36.5, spo2: 98 },
-      { date: "2026-10-26", weight: 52.9, muscle: 23.4, fatPct: 19.9, score: 74, bmi: 21.4, pulse: 66, temp: 36.4, spo2: 98 },
-      { date: "2026-10-27", weight: 53.0, muscle: 23.4, fatPct: 19.9, score: 74, bmi: 21.5, pulse: 61, temp: 36.5, spo2: 98 },
-      { date: "2026-10-28", weight: 53.3, muscle: 23.5, fatPct: 20.1, score: 74, bmi: 21.6, pulse: 55, temp: 36.5, spo2: 98 },
-      { date: "2026-10-29", weight: 52.5, muscle: 23.2, fatPct: 20.0, score: 73, bmi: 21.3, waist: 76.3, pulse: 59, temp: 36.6, spo2: 99 },
-      { date: "2026-10-30", weight: 52.8, muscle: 23.1, fatPct: 20.8, score: 73, bmi: 21.4, pulse: 54, temp: 36.5, spo2: 99 },
-      { date: "2026-10-31", weight: 53.2, muscle: 23.9, fatPct: 18.9, score: 75, bmi: 21.6, pulse: 58, temp: 36.6, spo2: 97 },
-      { date: "2026-11-01", weight: 52.6, muscle: 23.4, fatPct: 19.4, score: 74, bmi: 21.3, pulse: 60, temp: 36.4, spo2: 99 },
-      { date: "2026-11-02", weight: 52.4, muscle: 23.0, fatPct: 20.4, score: 73, bmi: 21.2, pulse: 58, temp: 36.4, spo2: 98 },
-      { date: "2026-11-03", weight: 52.6, muscle: 23.1, fatPct: 20.2, score: 73, bmi: 21.3, pulse: 53, temp: 36.4, spo2: 99, gripR: 32.6, gripL: 31.8 },
-      { date: "2026-11-04", weight: 52.4, muscle: 23.4, fatPct: 19.1, score: 74, bmi: 21.2, pulse: 55, temp: 36.5, spo2: 98 }
+      { date: "2026-10-05", weight: 54.1, muscle: 23.8, fatPct: 20.9, score: 74, bmi: 21.9, pulse: 58, temp: 36.4, spo2: 98, calIn: 1604, calOut: 2181, carb: 253.5, prot: 98.2, fat: 31.5, sleepH: 6.8, sleepScore: 78, deepH: 1.0, remH: 1.5, lightH: 4.3, sys: 114, dia: 71 },
+      { date: "2026-10-06", weight: 54.1, muscle: 23.8, fatPct: 19.9, score: 75, bmi: 21.9, pulse: 57, temp: 36.5, spo2: 98, calIn: 1522, calOut: 2119, carb: 191.6, prot: 111.0, fat: 44.4, sleepH: 5.9, sleepScore: 84, deepH: 0.8, remH: 1.3, lightH: 3.8, sys: 108, dia: 67 },
+      { date: "2026-10-07", weight: 54.2, muscle: 23.5, fatPct: 20.5, score: 74, bmi: 21.9, pulse: 60, temp: 36.4, spo2: 98, calIn: 1510, calOut: 2191, carb: 237.1, prot: 75.7, fat: 35.7, sleepH: 9.4, sleepScore: 88, deepH: 1.2, remH: 2.1, lightH: 6.1, sys: 112, dia: 70 },
+      { date: "2026-10-08", weight: 54.1, muscle: 23.6, fatPct: 21.0, score: 74, bmi: 21.8, pulse: 58, temp: 36.5, spo2: 98, calIn: 1576, calOut: 2202, carb: 246.5, prot: 96.5, fat: 31.3, sleepH: 6.5, sleepScore: 80, deepH: 0.9, remH: 1.6, lightH: 4.0, sys: 117, dia: 70 },
+      { date: "2026-10-09", weight: 54.2, muscle: 23.4, fatPct: 19.9, score: 74, bmi: 21.4, pulse: 54, temp: 36.5, spo2: 97, calIn: 1456, calOut: 2020, carb: 175.1, prot: 110.2, fat: 44.3, sleepH: 7.0, sleepScore: 78, deepH: 1.0, remH: 1.5, lightH: 4.5, sys: 121, dia: 73 },
+      { date: "2026-10-10", weight: 54.5, muscle: 23.5, fatPct: 20.8, score: 73, bmi: 21.6, pulse: 56, temp: 36.6, spo2: 97, calIn: 1605, calOut: 2370, carb: 262.4, prot: 76.2, fat: 34.5, sleepH: 7.3, sleepScore: 83, deepH: 0.9, remH: 2.3, lightH: 4.1, sys: 111, dia: 73 },
+      { date: "2026-10-11", weight: 53.8, muscle: 23.4, fatPct: 19.4, score: 74, bmi: 21.3, pulse: 60, temp: 36.4, spo2: 99, calIn: 1615, calOut: 2440, carb: 246.1, prot: 81.7, fat: 39.6, sleepH: 5.9, sleepScore: 72, deepH: 0.6, remH: 1.4, lightH: 3.9, sys: 131, dia: 80 },
+      { date: "2026-10-12", weight: 53.7, muscle: 23.3, fatPct: 20.4, score: 73, bmi: 21.2, pulse: 58, temp: 36.4, spo2: 98, calIn: 1604, calOut: 2181, carb: 253.5, prot: 98.2, fat: 31.5, sleepH: 6.5, sleepScore: 78, deepH: 1.0, remH: 1.8, lightH: 3.7, sys: 111, dia: 69 },
+      { date: "2026-10-13", weight: 53.8, muscle: 23.1, fatPct: 20.2, score: 73, bmi: 21.3, pulse: 53, temp: 36.4, spo2: 99, calIn: 1502, calOut: 1998, carb: 188.5, prot: 110.5, fat: 43.1, sleepH: 6.5, sleepScore: 77, deepH: 1.0, remH: 1.5, lightH: 4.0, sys: 106, dia: 71 },
+      { date: "2026-10-14", weight: 53.9, muscle: 23.4, fatPct: 19.1, score: 74, bmi: 21.2, pulse: 55, temp: 36.5, spo2: 98, calIn: 1550, calOut: 2200, carb: 220.0, prot: 95.0, fat: 38.0, sleepH: 7.8, sleepScore: 84, deepH: 1.2, remH: 1.8, lightH: 4.8, sys: 110, dia: 67 },
+      { date: "2026-10-15", weight: 53.5, muscle: 23.2, fatPct: 20.0, score: 73, bmi: 21.1, pulse: 61, temp: 36.5, spo2: 98, calIn: 1580, calOut: 2300, carb: 215.0, prot: 88.0, fat: 36.0, sleepH: 5.1, sleepScore: 54, deepH: 0.5, remH: 1.2, lightH: 3.4, sys: 114, dia: 73 },
+      { date: "2026-10-16", weight: 53.6, muscle: 23.5, fatPct: 19.8, score: 74, bmi: 21.2, pulse: 55, temp: 36.4, spo2: 98, calIn: 1610, calOut: 2390, carb: 230.0, prot: 92.0, fat: 39.0, sleepH: 6.0, sleepScore: 72, deepH: 0.9, remH: 1.5, lightH: 3.6, sys: 122, dia: 74 },
+      { date: "2026-10-17", weight: 53.0, muscle: 23.3, fatPct: 19.5, score: 74, bmi: 21.0, pulse: 58, temp: 36.5, spo2: 98, calIn: 1500, calOut: 2150, carb: 210.0, prot: 85.0, fat: 33.0, sleepH: 6.9, sleepScore: 71, deepH: 1.1, remH: 1.9, lightH: 3.9, sys: 122, dia: 72 },
+      { date: "2026-10-18", weight: 53.2, muscle: 23.4, fatPct: 19.9, score: 74, bmi: 21.1, pulse: 57, temp: 36.5, spo2: 98, calIn: 1530, calOut: 2210, carb: 220.0, prot: 90.0, fat: 35.0, sleepH: 5.0, sleepScore: 61, deepH: 0.8, remH: 1.2, lightH: 3.0, sys: 118, dia: 70 },
+      { date: "2026-10-19", weight: 52.8, muscle: 23.2, fatPct: 20.1, score: 73, bmi: 20.9, pulse: 59, temp: 36.4, spo2: 98, calIn: 1480, calOut: 2120, carb: 205.0, prot: 82.0, fat: 32.0, sleepH: 5.0, sleepScore: 67, deepH: 0.8, remH: 1.3, lightH: 2.9, sys: 115, dia: 68 },
+      { date: "2026-10-20", weight: 53.1, muscle: 23.5, fatPct: 19.6, score: 74, bmi: 21.0, pulse: 56, temp: 36.5, spo2: 98, calIn: 1560, calOut: 2260, carb: 235.0, prot: 94.0, fat: 37.0, sleepH: 7.1, sleepScore: 78, deepH: 1.2, remH: 1.7, lightH: 4.2, sys: 120, dia: 72 },
+      { date: "2026-10-21", weight: 52.9, muscle: 23.4, fatPct: 19.8, score: 74, bmi: 21.0, pulse: 58, temp: 36.5, spo2: 98, calIn: 1520, calOut: 2190, carb: 220.0, prot: 89.0, fat: 34.0, sleepH: 5.0, sleepScore: 64, deepH: 0.8, remH: 1.3, lightH: 2.9, sys: 111, dia: 70 },
+      { date: "2026-10-22", weight: 53.0, muscle: 23.4, fatPct: 19.9, score: 74, bmi: 21.0, pulse: 57, temp: 36.5, spo2: 98, calIn: 1510, calOut: 2170, carb: 215.0, prot: 87.0, fat: 33.0, sleepH: 5.0, sleepScore: 65, deepH: 0.8, remH: 1.3, lightH: 2.9, sys: 113, dia: 71 },
+      { date: "2026-10-23", weight: 53.5, muscle: 23.6, fatPct: 20.1, score: 74, bmi: 21.7, pulse: 57, temp: 36.3, spo2: 99, calIn: 1440, calOut: 2130, carb: 200.0, prot: 84.0, fat: 31.0, sleepH: 6.0, sleepScore: 73, deepH: 1.0, remH: 1.6, lightH: 3.4, sys: 110, dia: 67 },
+      { date: "2026-10-24", weight: 53.7, muscle: 23.5, fatPct: 20.5, score: 74, bmi: 21.8, pulse: 57, temp: 36.6, spo2: 98, calIn: 1450, calOut: 2150, carb: 205.0, prot: 85.0, fat: 32.0, sleepH: 6.0, sleepScore: 69, deepH: 1.0, remH: 1.6, lightH: 3.4, sys: 112, dia: 70 },
+      { date: "2026-10-25", weight: 52.8, muscle: 23.5, fatPct: 19.5, score: 74, bmi: 21.4, pulse: 60, temp: 36.5, spo2: 98, calIn: 1450, calOut: 2010, carb: 195.0, prot: 83.0, fat: 30.0, sleepH: 2.0, sleepScore: 67, deepH: 0.3, remH: 0.5, lightH: 1.2, sys: 120, dia: 75 },
+      { date: "2026-10-26", weight: 52.9, muscle: 23.4, fatPct: 19.9, score: 74, bmi: 21.4, pulse: 66, temp: 36.4, spo2: 98, calIn: 1630, calOut: 2420, carb: 250.0, prot: 95.0, fat: 38.0, sleepH: 5.0, sleepScore: 68, deepH: 0.8, remH: 1.3, lightH: 2.9, sys: 117, dia: 70 },
+      { date: "2026-10-27", weight: 53.0, muscle: 23.4, fatPct: 19.9, score: 74, bmi: 21.5, pulse: 61, temp: 36.5, spo2: 98, calIn: 1600, calOut: 2460, carb: 245.0, prot: 92.0, fat: 36.0, sleepH: 6.0, sleepScore: 61, deepH: 1.0, remH: 1.6, lightH: 3.4, sys: 117, dia: 70 },
+      { date: "2026-10-28", weight: 53.3, muscle: 23.5, fatPct: 20.1, score: 74, bmi: 21.6, pulse: 55, temp: 36.5, spo2: 98, calIn: 1480, calOut: 2180, carb: 210.0, prot: 86.0, fat: 32.0, sleepH: 6.0, sleepScore: 69, deepH: 1.0, remH: 1.6, lightH: 3.4, sys: 117, dia: 70 },
+      { date: "2026-10-29", weight: 52.5, muscle: 23.2, fatPct: 20.0, score: 73, bmi: 21.3, waist: 76.3, pulse: 59, temp: 36.6, spo2: 99, calIn: 1350, calOut: 2020, carb: 180.0, prot: 80.0, fat: 28.0, sleepH: 7.9, sleepScore: 74, deepH: 1.3, remH: 2.1, lightH: 4.5, sys: 115, dia: 71 },
+      { date: "2026-10-30", weight: 52.8, muscle: 23.1, fatPct: 20.8, score: 73, bmi: 21.4, pulse: 54, temp: 36.5, spo2: 99, calIn: 1670, calOut: 2380, carb: 260.0, prot: 98.0, fat: 40.0, sleepH: 7.0, sleepScore: 75, deepH: 1.1, remH: 1.9, lightH: 4.0, sys: 114, dia: 68 },
+      { date: "2026-10-31", weight: 53.2, muscle: 23.9, fatPct: 18.9, score: 75, bmi: 21.6, pulse: 58, temp: 36.6, spo2: 97, calIn: 1580, calOut: 2430, carb: 240.0, prot: 91.0, fat: 37.0, sleepH: 6.0, sleepScore: 75, deepH: 1.0, remH: 1.6, lightH: 3.4, sys: 117, dia: 73 },
+      { date: "2026-11-01", weight: 52.6, muscle: 23.4, fatPct: 19.4, score: 74, bmi: 21.3, pulse: 60, temp: 36.4, spo2: 99, calIn: 1570, calOut: 2170, carb: 235.0, prot: 89.0, fat: 35.0, sleepH: 2.0, sleepScore: 60, deepH: 0.3, remH: 0.5, lightH: 1.2, sys: 111, dia: 69 },
+      { date: "2026-11-02", weight: 52.4, muscle: 23.0, fatPct: 20.4, score: 73, bmi: 21.2, pulse: 58, temp: 36.4, spo2: 98, calIn: 1560, calOut: 2370, carb: 230.0, prot: 88.0, fat: 34.0, sleepH: 6.0, sleepScore: 68, deepH: 1.0, remH: 1.6, lightH: 3.4, sys: 106, dia: 71 },
+      { date: "2026-11-03", weight: 52.6, muscle: 23.1, fatPct: 20.2, score: 73, bmi: 21.3, pulse: 53, temp: 36.4, spo2: 99, gripR: 32.6, gripL: 31.8, calIn: 1540, calOut: 2330, carb: 225.0, prot: 87.0, fat: 33.0, sleepH: 7.0, sleepScore: 73, deepH: 1.2, remH: 1.9, lightH: 3.9, sys: 110, dia: 67 },
+      { date: "2026-11-04", weight: 52.4, muscle: 23.4, fatPct: 19.1, score: 74, bmi: 21.2, pulse: 55, temp: 36.5, spo2: 98, calIn: 1513, calOut: 2201, carb: 220.0, prot: 88.5, fat: 32.0, sleepH: 6.58, sleepScore: 76.6, deepH: 1.0, remH: 1.7, lightH: 3.8, sys: 114, dia: 71 }
     ];
 
     const DOCK_HISTORY = [
@@ -420,45 +339,43 @@
 
     function showToast(msg) {
       const box = document.getElementById('toast-box');
-      box.innerHTML = msg;
-      box.style.display = 'block';
+      box.innerHTML = msg; box.style.display = 'block';
       setTimeout(() => { box.style.display = 'none'; }, 5000);
     }
 
-    function toggleSyncPanel() {
-      document.getElementById('sync-panel').classList.toggle('open');
+    function toggleSyncPanel() { document.getElementById('sync-panel').classList.toggle('open'); }
+
+    // 時刻文字列（"7:56", "1:18" 等）を時間（数値）に変換
+    function parseTimeToHours(val) {
+      if (val === null || val === undefined || val === '') return 0;
+      if (typeof val === 'number') return val;
+      let s = String(val).trim();
+      let parts = s.split(':');
+      if (parts.length >= 2) {
+        let h = parseFloat(parts[0]) || 0;
+        let m = parseFloat(parts[1]) || 0;
+        return +(h + m / 60).toFixed(2);
+      }
+      return parseNum(val) || 0;
     }
 
-    // どんな日付表記（"2026/11/04", "Date(2026,10,4)", "11/4"）も確実に "YYYY-MM-DD" に変換
     function normalizeDateStr(val) {
       if (val === null || val === undefined) return null;
       if (val instanceof Date) {
         return `${val.getFullYear()}-${('0'+(val.getMonth()+1)).slice(-2)}-${('0'+val.getDate()).slice(-2)}`;
       }
-      let s = String(val).trim()
-        .replace(/^[’'”"\s]+/, '')
-        .replace(/[０-９]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
-        .replace(/[／．年月]/g, '-')
-        .replace(/日/g, '');
-
+      let s = String(val).trim().replace(/^[’'”"\s]+/, '').replace(/[０-９]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0)).replace(/[／．年月]/g, '-').replace(/日/g, '');
       let dm = s.match(/^Date\((\d+),(\d+),(\d+)/);
-      if (dm) {
-        return `${dm[1]}-${('0'+(parseInt(dm[2],10)+1)).slice(-2)}-${('0'+dm[3]).slice(-2)}`;
-      }
+      if (dm) return `${dm[1]}-${('0'+(parseInt(dm[2],10)+1)).slice(-2)}-${('0'+dm[3]).slice(-2)}`;
       let mFull = s.match(/(\d{4})[-/](\d{1,2})[-/](\d{1,2})/);
-      if (mFull) {
-        return `${mFull[1]}-${('0'+mFull[2]).slice(-2)}-${('0'+mFull[3]).slice(-2)}`;
-      }
+      if (mFull) return `${mFull[1]}-${('0'+mFull[2]).slice(-2)}-${('0'+mFull[3]).slice(-2)}`;
       return null;
     }
 
-    // 単位付き文字列（"52.4 kg", "19.1%" 等）から数値を安全に抽出
     function parseNum(val) {
       if (val === null || val === undefined || val === '') return null;
       if (typeof val === 'number') return isNaN(val) ? null : val;
-      let s = String(val).trim()
-        .replace(/[０-９．－]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0))
-        .replace(/,/g, '');
+      let s = String(val).trim().replace(/[０-９．－]/g, ch => String.fromCharCode(ch.charCodeAt(0) - 0xFEE0)).replace(/,/g, '');
       let hm = s.match(/^(\d+)\s*時間\s*(\d+)\s*分/);
       if (hm) return +(parseInt(hm[1],10) + parseInt(hm[2],10)/60).toFixed(2);
       let m = s.match(/([+-]?\d+(?:\.\d+)?)/);
@@ -468,15 +385,7 @@
     function initBaseData() {
       dailyMap = {};
       EMBEDDED_BODY_ROWS.forEach(r => {
-        dailyMap[r.date] = {
-          date: r.date,
-          weight: r.weight, muscle: r.muscle, fatPct: r.fatPct, score: r.score, bmi: r.bmi,
-          waist: r.waist || null, temp: r.temp || null, pulse: r.pulse || 58, spo2: r.spo2 || 98,
-          gripR: r.gripR || null, gripL: r.gripL || null,
-          calIn: 1513, calOut: 2201, prot: 88.5, fat: 38.0, fiber: 24.7, salt: 3.5,
-          sleepH: 6.58, sleepScore: 76.6, sleepEff: 91.3,
-          sys: 114, dia: 71
-        };
+        dailyMap[r.date] = { ...r };
       });
     }
 
@@ -492,17 +401,12 @@
       return m ? m[1] : null;
     }
 
-    // キャッシュ遅延ゼロの GViz JSONP ローダー
     function loadGvizJson(sheetId, gid = null) {
       return new Promise((resolve, reject) => {
         const cb = 'gviz_cb_' + Math.random().toString(36).slice(2) + '_' + Date.now();
         const s = document.createElement('script');
         let timer = setTimeout(() => { cleanup(); reject(new Error('timeout')); }, 6000);
-        function cleanup() {
-          clearTimeout(timer);
-          delete window[cb];
-          if (s.parentNode) s.parentNode.removeChild(s);
-        }
+        function cleanup() { clearTimeout(timer); delete window[cb]; if (s.parentNode) s.parentNode.removeChild(s); }
         window[cb] = function(resp) {
           cleanup();
           if (resp && resp.status === 'ok' && resp.table) resolve(resp.table);
@@ -522,37 +426,23 @@
       return '';
     }
 
-    // 体組成シート（A列:曜日, B列:日付, D列:体重, E列:骨格筋量, G列:体脂肪率, J列:点数, K列:BMI, L列:腹囲, M列:体温, N列:脈拍, O列:SpO2, P列:握力右, Q列:握力左）を解析
+    // 体組成シート統合
     function mergeBodyGvizTable(table) {
-      if (!table || !table.rows) return 0;
-      let count = 0;
+      if (!table || !table.rows) return;
       for (const r of table.rows) {
         const c = r.c || [];
-        // A列(0)またはB列(1)のどちらかにある日付を自動検出
         const dStr = normalizeDateStr(cellStr(c[1])) || normalizeDateStr(cellStr(c[0]));
         if (!dStr) continue;
-
         const isBDate = !!normalizeDateStr(cellStr(c[1]));
         const offset = isBDate ? 0 : -1;
-
         const w = parseNum(cellStr(c[3 + offset]));
         if (!w || w < 30 || w > 120) continue;
 
-        if (!dailyMap[dStr]) {
-          dailyMap[dStr] = {
-            date: dStr,
-            calIn: 1513, calOut: 2201, prot: 88.5, fat: 38.0, fiber: 24.7, salt: 3.5,
-            sleepH: 6.58, sleepScore: 76.6, sleepEff: 91.3,
-            sys: 114, dia: 71
-          };
-        }
+        if (!dailyMap[dStr]) dailyMap[dStr] = { date: dStr };
         const entry = dailyMap[dStr];
         entry.weight = w;
         entry.muscle = parseNum(cellStr(c[4 + offset])) ?? entry.muscle;
-        entry.fatMass = parseNum(cellStr(c[5 + offset])) ?? entry.fatMass;
         entry.fatPct = parseNum(cellStr(c[6 + offset])) ?? entry.fatPct;
-        entry.bmr    = parseNum(cellStr(c[7 + offset])) ?? entry.bmr;
-        entry.visc   = parseNum(cellStr(c[8 + offset])) ?? entry.visc;
         entry.score  = parseNum(cellStr(c[9 + offset])) ?? entry.score;
         entry.bmi    = parseNum(cellStr(c[10 + offset])) ?? +(w / (1.57 * 1.57)).toFixed(1);
         entry.waist  = parseNum(cellStr(c[11 + offset])) ?? entry.waist;
@@ -561,44 +451,55 @@
         entry.spo2   = parseNum(cellStr(c[14 + offset])) ?? entry.spo2;
         entry.gripR  = parseNum(cellStr(c[15 + offset])) ?? entry.gripR;
         entry.gripL  = parseNum(cellStr(c[16 + offset])) ?? entry.gripL;
-        entry.memo   = cellStr(c[17 + offset]) || '';
-        count++;
       }
-      return count;
     }
 
-    // 汎用CSV/GVizマージ（栄養・睡眠・血圧シート用）
-    function mergeGenericGvizTable(table, type) {
+    // 栄養シート統合（正確な列指定: B=摂取, C=消費, D=炭水化物, E=タンパク質, G=総脂質）
+    function mergeNutrGvizTable(table) {
       if (!table || !table.rows) return;
-      const cols = (table.cols || []).map(col => (col.label || '').trim());
       for (const r of table.rows) {
         const c = r.c || [];
-        let dStr = normalizeDateStr(cellStr(c[0])) || normalizeDateStr(cellStr(c[1]));
+        const dStr = normalizeDateStr(cellStr(c[1])) || normalizeDateStr(cellStr(c[0]));
         if (!dStr) continue;
-        if (!dailyMap[dStr]) {
-          dailyMap[dStr] = { date: dStr };
-        }
+        if (!dailyMap[dStr]) dailyMap[dStr] = { date: dStr };
         const entry = dailyMap[dStr];
-        c.forEach((cell, idx) => {
-          const header = cols[idx] || '';
-          const v = parseNum(cellStr(cell));
-          if (v === null) return;
-          if (type === 'nutr') {
-            if (/摂取|エネルギー|カロリー/i.test(header) && !/消費|収支/.test(header)) entry.calIn = v;
-            else if (/消費/i.test(header)) entry.calOut = v;
-            else if (/タンパク|蛋白|protein/i.test(header)) entry.prot = v;
-            else if (/食物繊維|fiber/i.test(header)) entry.fiber = v;
-            else if (/塩分|食塩/i.test(header)) entry.salt = v;
-          } else if (type === 'sleep') {
-            if (/時間|duration/i.test(header) && v < 24) entry.sleepH = v;
-            else if (/スコア|score/i.test(header)) entry.sleepScore = v;
-            else if (/効率/i.test(header)) entry.sleepEff = v;
-          } else if (type === 'bp') {
-            if (/最高|収縮|上/i.test(header)) entry.sys = v;
-            else if (/最低|拡張|下/i.test(header)) entry.dia = v;
-            else if (/脈拍|心拍/i.test(header)) entry.pulse = v;
-          }
-        });
+        entry.calIn  = parseNum(cellStr(c[1])) ?? entry.calIn;   // B: 摂取カロリー
+        entry.calOut = parseNum(cellStr(c[2])) ?? entry.calOut;  // C: 消費カロリー
+        entry.carb   = parseNum(cellStr(c[3])) ?? entry.carb;    // D: 炭水化物
+        entry.prot   = parseNum(cellStr(c[4])) ?? entry.prot;    // E: タンパク質
+        entry.fat    = parseNum(cellStr(c[6])) ?? entry.fat;     // G: 総脂質
+      }
+    }
+
+    // 睡眠シート統合（B=日付, G=トータル睡眠, H=スコア, I=効率, L=レム, M=浅い, N=深い）
+    function mergeSleepGvizTable(table) {
+      if (!table || !table.rows) return;
+      for (const r of table.rows) {
+        const c = r.c || [];
+        const dStr = normalizeDateStr(cellStr(c[1])) || normalizeDateStr(cellStr(c[0]));
+        if (!dStr) continue;
+        if (!dailyMap[dStr]) dailyMap[dStr] = { date: dStr };
+        const entry = dailyMap[dStr];
+        entry.sleepH     = parseTimeToHours(cellStr(c[6])) || entry.sleepH; // G: トータル睡眠
+        entry.sleepScore = parseNum(cellStr(c[7])) ?? entry.sleepScore;    // H: スコア
+        entry.sleepEff   = parseNum(cellStr(c[8])) ?? entry.sleepEff;      // I: 効率
+        entry.remH       = parseTimeToHours(cellStr(c[11])) || entry.remH; // L: レム睡眠
+        entry.lightH     = parseTimeToHours(cellStr(c[12])) || entry.lightH;// M: 浅い睡眠
+        entry.deepH      = parseTimeToHours(cellStr(c[13])) || entry.deepH; // N: 深い睡眠
+      }
+    }
+
+    // 血圧シート統合
+    function mergeBpGvizTable(table) {
+      if (!table || !table.rows) return;
+      for (const r of table.rows) {
+        const c = r.c || [];
+        const dStr = normalizeDateStr(cellStr(c[1])) || normalizeDateStr(cellStr(c[0]));
+        if (!dStr) continue;
+        if (!dailyMap[dStr]) dailyMap[dStr] = { date: dStr };
+        const entry = dailyMap[dStr];
+        entry.sys   = parseNum(cellStr(c[15])) ?? entry.sys;
+        entry.pulse = parseNum(cellStr(c[16])) ?? entry.pulse;
       }
     }
 
@@ -612,41 +513,33 @@
       const bpUrl    = document.getElementById('url-bp').value.trim();
 
       try {
-        const bodyId = extractSheetId(bodyUrl);
-        if (bodyId) {
-          const table = await loadGvizJson(bodyId, extractGid(bodyUrl));
-          mergeBodyGvizTable(table);
+        if (extractSheetId(bodyUrl)) {
+          const t = await loadGvizJson(extractSheetId(bodyUrl), extractGid(bodyUrl));
+          mergeBodyGvizTable(t);
         }
         if (extractSheetId(nutrUrl)) {
           const t = await loadGvizJson(extractSheetId(nutrUrl), extractGid(nutrUrl));
-          mergeGenericGvizTable(t, 'nutr');
+          mergeNutrGvizTable(t);
         }
         if (extractSheetId(sleepUrl)) {
           const t = await loadGvizJson(extractSheetId(sleepUrl), extractGid(sleepUrl));
-          mergeGenericGvizTable(t, 'sleep');
+          mergeSleepGvizTable(t);
         }
         if (extractSheetId(bpUrl)) {
           const t = await loadGvizJson(extractSheetId(bpUrl), extractGid(bpUrl));
-          mergeGenericGvizTable(t, 'bp');
+          mergeBpGvizTable(t);
         }
-      } catch (e) {
-        console.warn('Sync notice:', e);
-      }
+      } catch (e) { console.warn('Sync notice:', e); }
 
       renderAll();
-
       const allDates = Object.keys(dailyMap).sort();
       const latestDate = allDates[allDates.length - 1] || '--';
-      badge.innerText = `✓ スプレッドシート自動同期済 (4種・最新 ${latestDate})`;
-
-      if (showAlert) {
-        showToast(`✅ スプレッドシート同期完了！（最新日: <b>${latestDate}</b>）`);
-      }
+      badge.innerText = `✓ スプレッドシート自動同期済 (最新 ${latestDate})`;
+      if (showAlert) showToast(`✅ 同期完了！（最新日: <b>${latestDate}</b>）`);
     }
 
     function updateSobrietyBadges(latestDateStr) {
       const refDate = latestDateStr ? new Date(latestDateStr) : new Date();
-      // 禁酒開始基準日: 2026-08-18 (11/03時点で78日目、11/04時点で79日目)
       const sobrietyStart = new Date('2026-08-18T00:00:00');
       const smokeStart    = new Date('1983-03-01T00:00:00');
       const sobDays = Math.max(1, Math.round((refDate - sobrietyStart) / 86400000) + 1);
@@ -657,7 +550,7 @@
 
     function getFilteredRows() {
       const all = Object.values(dailyMap).sort((a, b) => a.date.localeCompare(b.date));
-      if (all.length === 0) return [];
+      if (!all.length) return [];
       if (currentPeriodDays >= 9000) return all;
       return all.slice(-currentPeriodDays);
     }
@@ -665,8 +558,7 @@
     function avg(arr, key, digits = 1) {
       const vals = arr.map(r => r[key]).filter(v => typeof v === 'number' && !isNaN(v));
       if (!vals.length) return '--';
-      const sum = vals.reduce((a, b) => a + b, 0);
-      return (sum / vals.length).toFixed(digits);
+      return (vals.reduce((a, b) => a + b, 0) / vals.length).toFixed(digits);
     }
 
     function renderAll() {
@@ -681,27 +573,25 @@
       document.getElementById('period-range-text').innerText = `表示期間：${pLabel} (${firstDate} 〜 ${latestDate})`;
       updateSobrietyBadges(latestDate);
 
-      // KPI更新
       document.getElementById('kpi-weight').innerText = `${avg(rows, 'weight', 1)} kg`;
       document.getElementById('kpi-weight-sub').innerText = `最新(${latestDate.slice(5)}): ${latestRow.weight} kg / 平均BMI: ${avg(rows, 'bmi', 1)}`;
 
       document.getElementById('kpi-muscle').innerText = `${avg(rows, 'muscle', 1)} kg / ${avg(rows, 'fatPct', 1)} %`;
-      document.getElementById('kpi-muscle-sub').innerText = `InBody点数 平均: ${avg(rows, 'score', 0)} 点 (最新体脂肪: ${latestRow.fatPct}%)`;
+      document.getElementById('kpi-muscle-sub').innerText = `InBody点数 平均: ${avg(rows, 'score', 0)} 点`;
 
       const avgIn = parseFloat(avg(rows, 'calIn', 0)) || 1513;
       const avgOut = parseFloat(avg(rows, 'calOut', 0)) || 2201;
-      const calDiff = Math.round(avgIn - avgOut);
-      document.getElementById('kpi-cal').innerText = `${calDiff} kcal/日`;
+      document.getElementById('kpi-cal').innerText = `${Math.round(avgIn - avgOut)} kcal/日`;
       document.getElementById('kpi-cal-sub').innerText = `摂取: ${avgIn} kcal / 消費: ${avgOut} kcal`;
 
-      document.getElementById('kpi-prot').innerText = `${avg(rows, 'prot', 1)} g / ${avg(rows, 'fiber', 1)} g`;
-      document.getElementById('kpi-prot-sub').innerText = `平均塩分: ${avg(rows, 'salt', 1)} g/日`;
+      document.getElementById('kpi-prot').innerText = `${avg(rows, 'prot', 1)} g / ${avg(rows, 'fat', 1)} g`;
+      document.getElementById('kpi-prot-sub').innerText = `平均炭水化物: ${avg(rows, 'carb', 1)} g/日`;
 
       document.getElementById('kpi-sleep').innerText = `${avg(rows, 'sleepH', 2)} h (${avg(rows, 'sleepScore', 1)}点)`;
       document.getElementById('kpi-sleep-sub').innerText = `平均睡眠効率: ${avg(rows, 'sleepEff', 1)} %`;
 
       document.getElementById('kpi-bp').innerText = `${avg(rows, 'sys', 0)} / ${avg(rows, 'dia', 0)} mmHg`;
-      document.getElementById('kpi-bp-sub').innerText = `平均脈拍: ${avg(rows, 'pulse', 0)} bpm (最新: ${latestRow.pulse || '--'} bpm)`;
+      document.getElementById('kpi-bp-sub').innerText = `平均脈拍: ${avg(rows, 'pulse', 0)} bpm`;
 
       const labels = rows.map(r => r.date.slice(5));
 
@@ -711,8 +601,8 @@
         data: {
           labels,
           datasets: [
-            { label: '体重 (kg・左軸)', data: rows.map(r => r.weight), borderColor: '#3b82f6', backgroundColor: '#3b82f6', yAxisID: 'y', tension: 0.25 },
-            { label: '体脂肪率 (%・右軸)', data: rows.map(r => r.fatPct), borderColor: '#f59e0b', backgroundColor: '#f59e0b', yAxisID: 'y1', tension: 0.25 }
+            { label: '体重 (kg・左軸)', data: rows.map(r => r.weight), borderColor: '#3b82f6', yAxisID: 'y', tension: 0.25 },
+            { label: '体脂肪率 (%・右軸)', data: rows.map(r => r.fatPct), borderColor: '#f59e0b', yAxisID: 'y1', tension: 0.25 }
           ]
         },
         options: {
@@ -724,73 +614,85 @@
         }
       });
 
-      // ② カロリー収支グラフ
+      // ② カロリー収支（折れ線収支 ＆ プラス位置の摂取・消費棒グラフ）
       drawChart('chart-cal', {
         type: 'bar',
         data: {
           labels,
           datasets: [
-            { label: 'カロリー収支 (kcal)', data: rows.map(r => (r.calIn || 1513) - (r.calOut || 2201)), backgroundColor: '#10b981' },
-            { label: '摂取カロリー (kcal)', data: rows.map(r => r.calIn || 1513), backgroundColor: '#3b82f6' },
-            { label: '消費カロリー (kcal)', data: rows.map(r => r.calOut || 2201), backgroundColor: '#ef4444' }
+            { label: 'カロリー収支 (kcal)', data: rows.map(r => (r.calIn || 1513) - (r.calOut || 2201)), type: 'line', borderColor: '#10b981', backgroundColor: '#10b981', yAxisID: 'y1', tension: 0.2 },
+            { label: '摂取カロリー (kcal)', data: rows.map(r => r.calIn || 1513), backgroundColor: '#3b82f6', yAxisID: 'y' },
+            { label: '消費カロリー (kcal)', data: rows.map(r => r.calOut || 2201), backgroundColor: '#ef4444', yAxisID: 'y' }
           ]
         },
-        options: { responsive: true, maintainAspectRatio: false }
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          scales: {
+            y: { position: 'left', suggestedMin: 0, suggestedMax: 3000 },
+            y1: { position: 'right', suggestedMin: -1500, suggestedMax: 500, grid: { drawOnChartArea: false } }
+          }
+        }
       });
 
-      // ③ 骨格筋量・InBody点数
+      // ③ 筋肉・代謝グラフ
       drawChart('chart-muscle', {
         type: 'line',
         data: {
           labels,
           datasets: [
-            { label: '骨格筋量 (kg・左軸)', data: rows.map(r => r.muscle), borderColor: '#10b981', backgroundColor: '#10b981', yAxisID: 'y', tension: 0.25 },
-            { label: 'InBody点数 (右軸)', data: rows.map(r => r.score), borderColor: '#a855f7', backgroundColor: '#a855f7', yAxisID: 'y1', tension: 0.25 }
+            { label: '骨格筋量 (kg)', data: rows.map(r => r.muscle), borderColor: '#10b981', yAxisID: 'y', tension: 0.25 },
+            { label: 'InBody点数', data: rows.map(r => r.score), borderColor: '#a855f7', yAxisID: 'y1', tension: 0.25 }
           ]
         },
         options: {
           responsive: true, maintainAspectRatio: false,
           scales: {
-            y: { type: 'linear', position: 'left', suggestedMin: 22, suggestedMax: 25 },
-            y1: { type: 'linear', position: 'right', suggestedMin: 70, suggestedMax: 80, grid: { drawOnChartArea: false } }
+            y: { position: 'left', suggestedMin: 22, suggestedMax: 25 },
+            y1: { position: 'right', suggestedMin: 70, suggestedMax: 80, grid: { drawOnChartArea: false } }
           }
         }
       });
 
-      // ④ 栄養素推移
+      // ④ PFCバランス 積み上げグラフ（炭水化物・タンパク質・脂質）
       drawChart('chart-pfc', {
-        type: 'line',
+        type: 'bar',
         data: {
           labels,
           datasets: [
-            { label: 'タンパク質 (g)', data: rows.map(r => r.prot || 88.5), borderColor: '#3b82f6', tension: 0.2 },
-            { label: '食物繊維 (g)', data: rows.map(r => r.fiber || 24.7), borderColor: '#10b981', tension: 0.2 },
-            { label: '塩分 (g)', data: rows.map(r => r.salt || 3.5), borderColor: '#f59e0b', tension: 0.2 }
+            { label: '炭水化物 (g)', data: rows.map(r => r.carb || 220), backgroundColor: '#3b82f6', stack: 'pfc' },
+            { label: 'タンパク質 (g)', data: rows.map(r => r.prot || 88), backgroundColor: '#10b981', stack: 'pfc' },
+            { label: '脂質 (g)', data: rows.map(r => r.fat || 35), backgroundColor: '#f59e0b', stack: 'pfc' }
           ]
         },
-        options: { responsive: true, maintainAspectRatio: false }
+        options: {
+          responsive: true, maintainAspectRatio: false,
+          scales: { x: { stacked: true }, y: { stacked: true } }
+        }
       });
 
-      // ⑤ 睡眠推移
+      // ⑤ 睡眠内訳 積み上げグラフ（深い・レム・浅い睡眠 ＆ スコア折れ線）
       drawChart('chart-sleep', {
         type: 'bar',
         data: {
           labels,
           datasets: [
-            { label: '睡眠スコア (点)', data: rows.map(r => r.sleepScore || 76.6), type: 'line', borderColor: '#f59e0b', yAxisID: 'y1', tension: 0.25 },
-            { label: '睡眠時間 (h)', data: rows.map(r => r.sleepH || 6.58), backgroundColor: 'rgba(99, 102, 241, 0.7)', yAxisID: 'y' }
+            { label: '睡眠スコア (点)', data: rows.map(r => r.sleepScore || 76), type: 'line', borderColor: '#f59e0b', yAxisID: 'y1', tension: 0.25 },
+            { label: '深い睡眠 (h)', data: rows.map(r => r.deepH || 1.0), backgroundColor: '#6366f1', stack: 'sleep' },
+            { label: 'レム睡眠 (h)', data: rows.map(r => r.remH || 1.5), backgroundColor: '#38bdf8', stack: 'sleep' },
+            { label: '浅い睡眠 (h)', data: rows.map(r => r.lightH || 4.0), backgroundColor: '#818cf8', stack: 'sleep' }
           ]
         },
         options: {
           responsive: true, maintainAspectRatio: false,
           scales: {
-            y: { position: 'left', suggestedMin: 4, suggestedMax: 9 },
-            y1: { position: 'right', suggestedMin: 60, suggestedMax: 95, grid: { drawOnChartArea: false } }
+            x: { stacked: true },
+            y: { stacked: true, position: 'left', suggestedMax: 10 },
+            y1: { position: 'right', suggestedMin: 50, suggestedMax: 100, grid: { drawOnChartArea: false } }
           }
         }
       });
 
-      // ⑥ 血圧・脈拍推移
+      // ⑥ 血圧・脈拍グラフ
       drawChart('chart-bp', {
         type: 'line',
         data: {
@@ -821,12 +723,12 @@
           <td style="color:#fbbf24;font-weight:600;">${r.fatPct ?? '-'}%</td>
           <td>${r.score ?? '-'}</td>
           <td>${r.bmi ?? '-'}</td>
-          <td>${r.gripR ? r.gripR + ' / ' + (r.gripL || '-') : '-'}</td>
           <td>${r.calIn ?? '-'}</td>
           <td>${r.calOut ?? '-'}</td>
+          <td>${(r.calIn || 1513) - (r.calOut || 2201)}</td>
+          <td>${r.carb ?? '-'}</td>
           <td>${r.prot ?? '-'}</td>
-          <td>${r.fiber ?? '-'}</td>
-          <td>${r.salt ?? '-'}</td>
+          <td>${r.fat ?? '-'}</td>
           <td>${r.sleepH ?? '-'}</td>
           <td>${r.sleepScore ?? '-'}</td>
           <td>${(r.sys || 114) + '/' + (r.dia || 71)}</td>
@@ -842,8 +744,8 @@
         data: {
           labels,
           datasets: [
-            { label: 'LDLコレステロール', data: DOCK_HISTORY.map(d => d.ldl), borderColor: '#3b82f6', tension: 0.2 },
-            { label: 'HDLコレステロール', data: DOCK_HISTORY.map(d => d.hdl), borderColor: '#10b981', tension: 0.2 },
+            { label: 'LDL', data: DOCK_HISTORY.map(d => d.ldl), borderColor: '#3b82f6', tension: 0.2 },
+            { label: 'HDL', data: DOCK_HISTORY.map(d => d.hdl), borderColor: '#10b981', tension: 0.2 },
             { label: 'γ-GTP', data: DOCK_HISTORY.map(d => d.ggtp), borderColor: '#f59e0b', tension: 0.2 }
           ]
         },
@@ -857,7 +759,7 @@
           datasets: [
             { label: '腹囲 (cm)', data: DOCK_HISTORY.map(d => d.waist), borderColor: '#a855f7', tension: 0.2 },
             { label: '体重 (kg)', data: DOCK_HISTORY.map(d => d.weight), borderColor: '#10b981', tension: 0.2 },
-            { label: '最高血圧 (mmHg)', data: DOCK_HISTORY.map(d => d.sys), borderColor: '#ef4444', tension: 0.2 }
+            { label: '最高血圧', data: DOCK_HISTORY.map(d => d.sys), borderColor: '#ef4444', tension: 0.2 }
           ]
         },
         options: { responsive: true, maintainAspectRatio: false }
@@ -865,18 +767,10 @@
 
       document.querySelector('#table-dock tbody').innerHTML = DOCK_HISTORY.slice().reverse().map(d => `
         <tr>
-          <td><b>${d.date}</b></td>
-          <td>${d.type}</td>
-          <td><b>${d.weight} kg</b></td>
-          <td>${d.waist} cm</td>
-          <td>${d.sys} / ${d.dia}</td>
-          <td>${d.ast}</td>
-          <td>${d.alt}</td>
-          <td>${d.ggtp}</td>
-          <td>${d.ldl}</td>
-          <td>${d.hdl}</td>
-          <td>${d.tg}</td>
-          <td>HbA1c ${d.hba1c}%</td>
+          <td><b>${d.date}</b></td><td>${d.type}</td><td><b>${d.weight} kg</b></td>
+          <td>${d.waist} cm</td><td>${d.sys} / ${d.dia}</td>
+          <td>${d.ast}</td><td>${d.alt}</td><td>${d.ggtp}</td>
+          <td>${d.ldl}</td><td>${d.hdl}</td><td>${d.tg}</td><td>HbA1c ${d.hba1c}%</td>
         </tr>
       `).join('');
     }
@@ -911,20 +805,20 @@
         sleep: document.getElementById('url-sleep').value.trim(),
         bp:    document.getElementById('url-bp').value.trim()
       };
-      try { localStorage.setItem('health_app_urls_v5', JSON.stringify(urls)); } catch (e) {}
+      try { localStorage.setItem('health_app_urls_v6', JSON.stringify(urls)); } catch (e) {}
       syncAllSheets(true);
     }
 
     function resetDefaultUrls() {
       document.getElementById('url-body').value = DEFAULT_SHEET_URLS.body;
-      try { localStorage.setItem('health_app_urls_v5', JSON.stringify(DEFAULT_SHEET_URLS)); } catch (e) {}
+      try { localStorage.setItem('health_app_urls_v6', JSON.stringify(DEFAULT_SHEET_URLS)); } catch (e) {}
       syncAllSheets(true);
     }
 
     window.addEventListener('DOMContentLoaded', () => {
       initBaseData();
       let saved = {};
-      try { saved = JSON.parse(localStorage.getItem('health_app_urls_v5') || '{}'); } catch (e) {}
+      try { saved = JSON.parse(localStorage.getItem('health_app_urls_v6') || '{}'); } catch (e) {}
       document.getElementById('url-body').value  = saved.body  || DEFAULT_SHEET_URLS.body;
       document.getElementById('url-nutr').value  = saved.nutr  || DEFAULT_SHEET_URLS.nutr;
       document.getElementById('url-sleep').value = saved.sleep || DEFAULT_SHEET_URLS.sleep;
