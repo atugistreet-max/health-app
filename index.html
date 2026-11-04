@@ -117,7 +117,7 @@
         <button class="btn" onclick="toggleSyncPanel()" style="padding:4px 9px;">✕ 閉じる</button>
       </div>
       <p style="font-size:0.78rem; color:var(--sub); margin:6px 0;">
-        ①体組成と③④睡眠・バイタルは標準内蔵済みです。②栄養管理シートには『栄養記録（削除禁止）』のURLのみを入力してください。
+        ①体組成と③④睡眠・バイタルは標準内蔵済みです。②栄養管理シートには『栄養記録（削除禁止）』のURLを入力してください。
       </p>
       <div class="url-grid">
         <span>① 体組成シート:</span><input type="text" id="url-body" placeholder="体組成記録スプレッドシートURL">
@@ -286,7 +286,6 @@
     Chart.defaults.color = '#94a3b8';
     Chart.defaults.borderColor = 'rgba(71, 85, 105, 0.35)';
 
-    // 体組成シートと睡眠バイタルシートのID（これらが栄養シート欄に誤設定されていたら自動排除する）
     const BODY_SHEET_ID  = "1FSdAN6fJL7TKezFrrXfEXRooWL7Nn6Uxyh-XY84zos4";
     const SLEEP_SHEET_ID = "1QqxP-JhUShpvAvaH6jz2FuJwWCBfjsGk2A1DHD5ch8A";
 
@@ -297,7 +296,7 @@
       bp:    `https://docs.google.com/spreadsheets/d/${SLEEP_SHEET_ID}/edit?usp=sharing`
     };
 
-    // 初期データ（実測の栄養・睡眠・体組成・血圧を完全保持）
+    // 初期確定データ（2026-11-04までの確定実績。11-05以降はシートから取得し、未入力項目はnullのまま保持）
     const EMBEDDED_BODY_ROWS = [
       { date: "2026-10-05", weight: 54.1, muscle: 23.8, fatPct: 20.9, score: 74, bmi: 21.9, pulse: 61, temp: 36.4, spo2: 98, calIn: 1550, calOut: 2150, carb: 225.0, prot: 92.0, fat: 35.0, sleepH: 5.88, sleepScore: 75, sleepEff: 89, deepH: 0.90, remH: 1.53, lightH: 3.45, sys: 114, dia: 68 },
       { date: "2026-10-06", weight: 53.7, muscle: 23.3, fatPct: 20.5, score: 73, bmi: 21.8, pulse: 61, temp: 36.5, spo2: 98, calIn: 1522, calOut: 2119, carb: 191.63, prot: 111.03, fat: 44.37, sleepH: 7.93, sleepScore: 84, sleepEff: 85, deepH: 1.47, remH: 1.30, lightH: 5.17, sys: 102, dia: 68 },
@@ -324,12 +323,12 @@
       { date: "2026-10-27", weight: 53.0, muscle: 23.4, fatPct: 19.9, score: 74, bmi: 21.5, pulse: 58, temp: 36.5, spo2: 98, calIn: 1350, calOut: 1970, carb: 185.0, prot: 95.0, fat: 31.0, sleepH: 6.40, sleepScore: 76, sleepEff: 93, deepH: 1.22, remH: 1.45, lightH: 3.73, sys: 113, dia: 68 },
       { date: "2026-10-28", weight: 53.3, muscle: 23.5, fatPct: 20.1, score: 74, bmi: 21.6, pulse: 58, temp: 36.5, spo2: 98, calIn: 1430, calOut: 2180, carb: 210.0, prot: 81.0, fat: 32.0, sleepH: 6.00, sleepScore: 68, sleepEff: 82, deepH: 1.03, remH: 1.70, lightH: 3.27, sys: 128, dia: 79 },
       { date: "2026-10-29", weight: 52.5, muscle: 23.2, fatPct: 20.0, score: 73, bmi: 21.3, waist: 76.3, pulse: 56, temp: 36.6, spo2: 99, calIn: 1450, calOut: 2260, carb: 205.0, prot: 96.0, fat: 33.0, sleepH: 6.03, sleepScore: 76, sleepEff: 94, deepH: 1.15, remH: 1.75, lightH: 3.13, sys: 122, dia: 77 },
-      { date: "2026-10-30", weight: 52.8, muscle: 23.1, fatPct: 20.8, score: 73, bmi: 21.4, pulse: 53, temp: 36.5, spo2: 99, calIn: 1350, calOut: 1960, carb: 180.0, prot: 102.0, fat: 34.0, sleepH: 8.05, sleepScore: 82, sleepEff: 91, deepH: 1.35, remH: 2.37, lightH: 4.33, sys: 110, dia: 68 },
-      { date: "2026-10-31", weight: 53.2, muscle: 23.9, fatPct: 18.9, score: 75, bmi: 21.6, pulse: 59, temp: 36.6, spo2: 97, calIn: 1660, calOut: 2370, carb: 255.0, prot: 88.0, fat: 37.0, sleepH: 7.35, sleepScore: 83, sleepEff: 95, deepH: 0.82, remH: 2.35, lightH: 4.18, sys: 107, dia: 71 },
-      { date: "2026-11-01", weight: 52.6, muscle: 23.4, fatPct: 19.4, score: 74, bmi: 21.3, pulse: 60, temp: 36.4, spo2: 99, calIn: 1570, calOut: 2410, carb: 240.0, prot: 84.0, fat: 35.0, sleepH: 7.28, sleepScore: 83, sleepEff: 99, deepH: 1.17, remH: 2.25, lightH: 3.80, sys: 127, dia: 73 },
-      { date: "2026-11-02", weight: 52.4, muscle: 23.0, fatPct: 20.4, score: 73, bmi: 21.2, pulse: 59, temp: 36.4, spo2: 98, calIn: 1560, calOut: 2170, carb: 225.0, prot: 98.0, fat: 34.0, sleepH: 5.18, sleepScore: 67, sleepEff: 94, deepH: 0.93, remH: 1.52, lightH: 2.73, sys: 116, dia: 73 },
-      { date: "2026-11-03", weight: 52.6, muscle: 23.1, fatPct: 20.2, score: 73, bmi: 21.3, pulse: 53, temp: 36.4, spo2: 99, gripR: 32.6, gripL: 31.8, calIn: 1540, calOut: 2360, carb: 215.0, prot: 104.0, fat: 36.0, sleepH: 6.22, sleepScore: 76, sleepEff: 96, deepH: 1.20, remH: 1.75, lightH: 3.27, sys: 109, dia: 66 },
-      { date: "2026-11-04", weight: 52.4, muscle: 23.4, fatPct: 19.1, score: 74, bmi: 21.2, pulse: 55, temp: 36.5, spo2: 98, calIn: 1513, calOut: 2201, carb: 220.0, prot: 88.5, fat: 35.0, sleepH: 7.37, sleepScore: 81, sleepEff: 95, deepH: 0.65, remH: 2.25, lightH: 4.47, sys: 109, dia: 70 }
+      { date: "2026-10-30", weight: 52.8, muscle: 23.1, fatPct: 20.8, score: 73, bmi: 21.4, pulse: 53, temp: 36.5, spo2: 99, calIn: 1350, calOut: 1970, carb: 188.13, prot: 97.90, fat: 32.67, sleepH: 8.05, sleepScore: 82, sleepEff: 91, deepH: 1.35, remH: 2.37, lightH: 4.33, sys: 110, dia: 68 },
+      { date: "2026-10-31", weight: 53.2, muscle: 23.9, fatPct: 18.9, score: 75, bmi: 21.6, pulse: 59, temp: 36.6, spo2: 97, calIn: 1670, calOut: 2374, carb: 275.24, prot: 77.34, fat: 35.25, sleepH: 7.35, sleepScore: 83, sleepEff: 95, deepH: 0.82, remH: 2.35, lightH: 4.18, sys: 107, dia: 71 },
+      { date: "2026-11-01", weight: 52.6, muscle: 23.4, fatPct: 19.4, score: 74, bmi: 21.3, pulse: 60, temp: 36.4, spo2: 99, calIn: 1574, calOut: 2411, carb: 271.94, prot: 70.51, fat: 28.75, sleepH: 7.28, sleepScore: 83, sleepEff: 99, deepH: 1.17, remH: 2.25, lightH: 3.80, sys: 127, dia: 73 },
+      { date: "2026-11-02", weight: 52.4, muscle: 23.0, fatPct: 20.4, score: 73, bmi: 21.2, pulse: 59, temp: 36.4, spo2: 98, calIn: 1558, calOut: 2168, carb: 238.80, prot: 97.90, fat: 32.67, sleepH: 5.18, sleepScore: 67, sleepEff: 94, deepH: 0.93, remH: 1.52, lightH: 2.73, sys: 116, dia: 73 },
+      { date: "2026-11-03", weight: 52.6, muscle: 23.1, fatPct: 20.2, score: 73, bmi: 21.3, pulse: 53, temp: 36.4, spo2: 99, gripR: 32.6, gripL: 31.8, calIn: 1537, calOut: 2360, carb: 213.73, prot: 95.29, fat: 42.21, sleepH: 6.22, sleepScore: 76, sleepEff: 96, deepH: 1.20, remH: 1.75, lightH: 3.27, sys: 109, dia: 66 },
+      { date: "2026-11-04", weight: 52.4, muscle: 23.4, fatPct: 19.1, score: 74, bmi: 21.2, pulse: 55, temp: 36.5, spo2: 98, calIn: 1344, calOut: 2162, carb: 230.40, prot: 62.11, fat: 25.76, sleepH: 7.37, sleepScore: 81, sleepEff: 95, deepH: 0.65, remH: 2.25, lightH: 4.47, sys: 109, dia: 70 }
     ];
 
     const DOCK_HISTORY = [
@@ -431,6 +430,7 @@
       return '';
     }
 
+    // ① 体組成シート統合（栄養データがまだない日はダミー値を入れず null のままにする）
     function mergeBodyGvizTable(table) {
       if (!table || !table.rows) return;
       for (const r of table.rows) {
@@ -441,7 +441,8 @@
         const offset = isBDate ? 0 : -1;
         const w = parseNum(c[3 + offset]);
         if (!w || w < 30 || w > 120) continue;
-        if (!dailyMap[dStr]) dailyMap[dStr] = { date: dStr, calIn: 1513, calOut: 2201, carb: 220, prot: 88.5, fat: 35 };
+
+        if (!dailyMap[dStr]) dailyMap[dStr] = { date: dStr };
         const entry = dailyMap[dStr];
         entry.weight = w;
         entry.muscle = parseNum(c[4 + offset]) ?? entry.muscle;
@@ -457,35 +458,45 @@
       }
     }
 
-    // ★鉄壁ガード付き：栄養シート統合（摂取カロリーが800kcal未満の睡眠データ等は絶対に上書きしない）
+    // ② 栄養シート統合（朝一番の少量記録でも即時反映＆未入力時はnullのまま保持）
     function mergeNutrGvizTable(table) {
       if (!table || !table.rows) return;
       for (const r of table.rows) {
         const c = (r.c || []).map(cellStr);
-        if (/デエビゴ|ゾルピデム|レム睡眠|就寝/.test(c.join(' '))) continue;
+        const joined = c.join(' ');
+        // 睡眠シートの誤読込は完全ブロック
+        if (/デエビゴ|ゾルピデム|レム睡眠|就寝時刻/.test(joined)) continue;
+
         const dStr = normalizeDateStr(c[1]) || normalizeDateStr(c[0]);
         if (!dStr) continue;
         const isBDate = !!normalizeDateStr(c[1]);
         const offset = isBDate ? 0 : -1;
 
-        const calIn  = parseNum(c[2 + offset]); // C列: 摂取カロリー
-        const calOut = parseNum(c[3 + offset]); // D列: 消費カロリー
-        // ★摂取カロリーが800〜4500の範囲外（例：睡眠シートの7時間や0時など）なら絶対にスキップ！
-        if (!calIn || calIn < 800 || calIn > 4500) continue;
+        const rawCalIn = String(c[2 + offset] || '').trim();
+        // C列が時刻表記（"1:30" 等）なら睡眠シートなのでスキップ
+        if (rawCalIn.includes(':')) continue;
+
+        const calIn  = parseNum(rawCalIn);       // C列: 摂取カロリー
+        const calOut = parseNum(c[3 + offset]);  // D列: 消費カロリー
+        const carb   = parseNum(c[4 + offset]);  // E列: 炭水化物(g)
+        const prot   = parseNum(c[5 + offset]);  // F列: タンパク質(g)
+        const fat    = parseNum(c[7 + offset]);  // H列: 総脂質(g)
+
+        // まだ何も栄養数値が入っていない空行はスキップ（nullのまま維持）
+        const hasAnyNutr = (calIn !== null && calIn > 0) || (prot !== null && prot > 0) || (carb !== null && carb > 0);
+        if (!hasAnyNutr) continue;
 
         if (!dailyMap[dStr]) dailyMap[dStr] = { date: dStr };
         const entry = dailyMap[dStr];
-        entry.calIn = calIn;
-        if (calOut && calOut >= 1000 && calOut <= 5000) entry.calOut = calOut;
-        const carb = parseNum(c[4 + offset]); // E列: 炭水化物
-        const prot = parseNum(c[5 + offset]); // F列: タンパク質
-        const fat  = parseNum(c[7 + offset]); // H列: 総脂質
-        if (carb !== null && carb >= 30) entry.carb = carb;
-        if (prot !== null && prot >= 20) entry.prot = prot;
-        if (fat  !== null && fat  >= 5)  entry.fat  = fat;
+        if (calIn  !== null && calIn  >= 0) entry.calIn  = calIn;
+        if (calOut !== null && calOut >= 0) entry.calOut = calOut;
+        if (carb   !== null && carb   >= 0) entry.carb   = carb;
+        if (prot   !== null && prot   >= 0) entry.prot   = prot;
+        if (fat    !== null && fat    >= 0) entry.fat    = fat;
       }
     }
 
+    // ③④ 睡眠・血圧シート統合（栄養データがまだない日はダミー値を入れず null のままにする）
     function mergeSleepAndBpGvizTable(table) {
       if (!table || !table.rows) return;
       for (const r of table.rows) {
@@ -494,7 +505,8 @@
         if (!dStr) continue;
         const isBDate = !!normalizeDateStr(c[1]);
         const offset = isBDate ? 0 : -1;
-        if (!dailyMap[dStr]) dailyMap[dStr] = { date: dStr, calIn: 1513, calOut: 2201, carb: 220, prot: 88.5, fat: 35 };
+
+        if (!dailyMap[dStr]) dailyMap[dStr] = { date: dStr };
         const entry = dailyMap[dStr];
 
         const sh = parseTimeToHours(c[6 + offset]);
@@ -526,11 +538,12 @@
       const badge = document.getElementById('sync-status-badge');
       badge.innerText = '⏳ スプレッドシート同期中...';
 
+      initBaseData();
+
       const bodyUrl  = document.getElementById('url-body').value.trim() || DEFAULT_SHEET_URLS.body;
       let   nutrUrl  = document.getElementById('url-nutr').value.trim();
       const sleepUrl = document.getElementById('url-sleep').value.trim() || DEFAULT_SHEET_URLS.sleep;
 
-      // ★栄養シート欄に睡眠シートや体組成シートのURLが紛れ込んでいたら強制クリア
       if (nutrUrl.includes(SLEEP_SHEET_ID) || nutrUrl.includes(BODY_SHEET_ID)) {
         nutrUrl = '';
         document.getElementById('url-nutr').value = '';
@@ -575,6 +588,7 @@
       return all.slice(-currentPeriodDays);
     }
 
+    // 記録がある日（nullでない日）だけで正確に平均を算出
     function avg(arr, key, digits = 1) {
       const vals = arr.map(r => r[key]).filter(v => typeof v === 'number' && !isNaN(v));
       if (!vals.length) return '--';
@@ -594,14 +608,17 @@
       updateSobrietyBadges(latestDate);
 
       document.getElementById('kpi-weight').innerText = `${avg(rows, 'weight', 1)} kg`;
-      document.getElementById('kpi-weight-sub').innerText = `最新(${latestDate.slice(5)}): ${latestRow.weight} kg / 平均BMI: ${avg(rows, 'bmi', 1)}`;
+      document.getElementById('kpi-weight-sub').innerText = `最新(${latestDate.slice(5)}): ${latestRow.weight ?? '--'} kg / 平均BMI: ${avg(rows, 'bmi', 1)}`;
 
       document.getElementById('kpi-muscle').innerText = `${avg(rows, 'muscle', 1)} kg / ${avg(rows, 'fatPct', 1)} %`;
       document.getElementById('kpi-muscle-sub').innerText = `InBody点数 平均: ${avg(rows, 'score', 0)} 点`;
 
-      const avgIn = parseFloat(avg(rows, 'calIn', 0)) || 1525;
-      const avgOut = parseFloat(avg(rows, 'calOut', 0)) || 2215;
-      document.getElementById('kpi-cal').innerText = `${Math.round(avgIn - avgOut)} kcal/日`;
+      // 栄養記録が入っている日だけで平均カロリー収支を計算（未入力の日は除外）
+      const nutrRows = rows.filter(r => typeof r.calIn === 'number' && typeof r.calOut === 'number');
+      const avgIn  = nutrRows.length ? Math.round(nutrRows.reduce((a, b) => a + b.calIn, 0) / nutrRows.length) : '--';
+      const avgOut = nutrRows.length ? Math.round(nutrRows.reduce((a, b) => a + b.calOut, 0) / nutrRows.length) : '--';
+      const avgNet = (typeof avgIn === 'number' && typeof avgOut === 'number') ? (avgIn - avgOut) : '--';
+      document.getElementById('kpi-cal').innerText = `${avgNet} kcal/日`;
       document.getElementById('kpi-cal-sub').innerText = `摂取: ${avgIn} kcal / 消費: ${avgOut} kcal`;
 
       document.getElementById('kpi-prot').innerText = `${avg(rows, 'prot', 1)} g / ${avg(rows, 'fat', 1)} g`;
@@ -621,8 +638,8 @@
         data: {
           labels,
           datasets: [
-            { label: '体重 (kg・左軸)', data: rows.map(r => r.weight), borderColor: '#3b82f6', backgroundColor: '#3b82f6', yAxisID: 'y', tension: 0.25 },
-            { label: '体脂肪率 (%・右軸)', data: rows.map(r => r.fatPct), borderColor: '#f59e0b', backgroundColor: '#f59e0b', yAxisID: 'y1', tension: 0.25 }
+            { label: '体重 (kg・左軸)', data: rows.map(r => r.weight ?? null), borderColor: '#3b82f6', backgroundColor: '#3b82f6', yAxisID: 'y', tension: 0.25 },
+            { label: '体脂肪率 (%・右軸)', data: rows.map(r => r.fatPct ?? null), borderColor: '#f59e0b', backgroundColor: '#f59e0b', yAxisID: 'y1', tension: 0.25 }
           ]
         },
         options: {
@@ -634,15 +651,19 @@
         }
       });
 
-      // ② カロリー収支グラフ（摂取・消費はプラス棒グラフ、収支は折れ線グラフ）
+      // ② カロリー収支グラフ（未入力の日はダミー値を出さず null にする）
       drawChart('chart-cal', {
         type: 'bar',
         data: {
           labels,
           datasets: [
-            { label: 'カロリー収支 (kcal・右軸)', data: rows.map(r => (r.calIn || 1525) - (r.calOut || 2215)), type: 'line', borderColor: '#10b981', backgroundColor: '#10b981', borderWidth: 2.5, pointRadius: 3, yAxisID: 'y1', tension: 0.2, order: 0 },
-            { label: '摂取カロリー (kcal・左軸)', data: rows.map(r => r.calIn || 1525), backgroundColor: '#3b82f6', yAxisID: 'y', order: 1 },
-            { label: '消費カロリー (kcal・左軸)', data: rows.map(r => r.calOut || 2215), backgroundColor: '#ef4444', yAxisID: 'y', order: 2 }
+            {
+              label: 'カロリー収支 (kcal・右軸)',
+              data: rows.map(r => (typeof r.calIn === 'number' && typeof r.calOut === 'number') ? (r.calIn - r.calOut) : null),
+              type: 'line', borderColor: '#10b981', backgroundColor: '#10b981', borderWidth: 2.5, pointRadius: 3, yAxisID: 'y1', tension: 0.2, order: 0
+            },
+            { label: '摂取カロリー (kcal・左軸)', data: rows.map(r => r.calIn ?? null), backgroundColor: '#3b82f6', yAxisID: 'y', order: 1 },
+            { label: '消費カロリー (kcal・左軸)', data: rows.map(r => r.calOut ?? null), backgroundColor: '#ef4444', yAxisID: 'y', order: 2 }
           ]
         },
         options: {
@@ -660,8 +681,8 @@
         data: {
           labels,
           datasets: [
-            { label: '骨格筋量 (kg・左軸)', data: rows.map(r => r.muscle), borderColor: '#10b981', backgroundColor: '#10b981', yAxisID: 'y', tension: 0.25 },
-            { label: 'InBody点数 (右軸)', data: rows.map(r => r.score), borderColor: '#a855f7', backgroundColor: '#a855f7', yAxisID: 'y1', tension: 0.25 }
+            { label: '骨格筋量 (kg・左軸)', data: rows.map(r => r.muscle ?? null), borderColor: '#10b981', backgroundColor: '#10b981', yAxisID: 'y', tension: 0.25 },
+            { label: 'InBody点数 (右軸)', data: rows.map(r => r.score ?? null), borderColor: '#a855f7', backgroundColor: '#a855f7', yAxisID: 'y1', tension: 0.25 }
           ]
         },
         options: {
@@ -673,15 +694,15 @@
         }
       });
 
-      // ④ PFCバランス積上げグラフ（タンパク質・脂質・炭水化物）
+      // ④ PFCバランス積上げグラフ（未入力の日はダミー値を出さず null にする）
       drawChart('chart-pfc', {
         type: 'bar',
         data: {
           labels,
           datasets: [
-            { label: 'タンパク質 (g)', data: rows.map(r => r.prot ?? 90), backgroundColor: '#10b981', stack: 'pfc' },
-            { label: '脂質 (g)', data: rows.map(r => r.fat ?? 35), backgroundColor: '#f59e0b', stack: 'pfc' },
-            { label: '炭水化物 (g)', data: rows.map(r => r.carb ?? 220), backgroundColor: '#3b82f6', stack: 'pfc' }
+            { label: 'タンパク質 (g)', data: rows.map(r => r.prot ?? null), backgroundColor: '#10b981', stack: 'pfc' },
+            { label: '脂質 (g)', data: rows.map(r => r.fat ?? null), backgroundColor: '#f59e0b', stack: 'pfc' },
+            { label: '炭水化物 (g)', data: rows.map(r => r.carb ?? null), backgroundColor: '#3b82f6', stack: 'pfc' }
           ]
         },
         options: {
@@ -690,16 +711,16 @@
         }
       });
 
-      // ⑤ 睡眠構成積上げグラフ（深い・レム・浅い睡眠 ＆ スコア折れ線）
+      // ⑤ 睡眠構成積上げグラフ
       drawChart('chart-sleep', {
         type: 'bar',
         data: {
           labels,
           datasets: [
-            { label: '睡眠スコア (点)', data: rows.map(r => r.sleepScore || 76), type: 'line', borderColor: '#f59e0b', backgroundColor: '#f59e0b', yAxisID: 'y1', tension: 0.25, order: 0 },
-            { label: '深い睡眠 (h)', data: rows.map(r => r.deepH || 1.0), backgroundColor: '#6366f1', stack: 'sleep', order: 1 },
-            { label: 'レム睡眠 (h)', data: rows.map(r => r.remH || 1.5), backgroundColor: '#38bdf8', stack: 'sleep', order: 2 },
-            { label: '浅い睡眠 (h)', data: rows.map(r => r.lightH || 4.0), backgroundColor: '#818cf8', stack: 'sleep', order: 3 }
+            { label: '睡眠スコア (点)', data: rows.map(r => r.sleepScore ?? null), type: 'line', borderColor: '#f59e0b', backgroundColor: '#f59e0b', yAxisID: 'y1', tension: 0.25, order: 0 },
+            { label: '深い睡眠 (h)', data: rows.map(r => r.deepH ?? null), backgroundColor: '#6366f1', stack: 'sleep', order: 1 },
+            { label: 'レム睡眠 (h)', data: rows.map(r => r.remH ?? null), backgroundColor: '#38bdf8', stack: 'sleep', order: 2 },
+            { label: '浅い睡眠 (h)', data: rows.map(r => r.lightH ?? null), backgroundColor: '#818cf8', stack: 'sleep', order: 3 }
           ]
         },
         options: {
@@ -718,9 +739,9 @@
         data: {
           labels,
           datasets: [
-            { label: '最高血圧 (mmHg)', data: rows.map(r => r.sys || 114), borderColor: '#ef4444', tension: 0.2 },
-            { label: '最低血圧 (mmHg)', data: rows.map(r => r.dia || 71), borderColor: '#3b82f6', tension: 0.2 },
-            { label: '脈拍 (bpm)', data: rows.map(r => r.pulse || 56), borderColor: '#10b981', borderDash: [4,4], tension: 0.2 }
+            { label: '最高血圧 (mmHg)', data: rows.map(r => r.sys ?? null), borderColor: '#ef4444', tension: 0.2 },
+            { label: '最低血圧 (mmHg)', data: rows.map(r => r.dia ?? null), borderColor: '#3b82f6', tension: 0.2 },
+            { label: '脈拍 (bpm)', data: rows.map(r => r.pulse ?? null), borderColor: '#10b981', borderDash: [4,4], tension: 0.2 }
           ]
         },
         options: { responsive: true, maintainAspectRatio: false }
@@ -730,31 +751,37 @@
       renderDockTab();
     }
 
+    // 日次データ一覧表（未入力項目はダミー値を一切出さず「-」を表示）
     function renderDailyTable() {
       const q = (document.getElementById('daily-search')?.value || '').toLowerCase();
       const allDesc = Object.values(dailyMap).sort((a, b) => b.date.localeCompare(a.date));
       const filtered = q ? allDesc.filter(r => JSON.stringify(r).toLowerCase().includes(q)) : allDesc;
 
-      document.querySelector('#table-daily tbody').innerHTML = filtered.map(r => `
-        <tr>
-          <td><b>${r.date}</b></td>
-          <td style="color:#60a5fa;font-weight:700;">${r.weight ?? '-'}</td>
-          <td>${r.muscle ?? '-'}</td>
-          <td style="color:#fbbf24;font-weight:600;">${r.fatPct ?? '-'}%</td>
-          <td>${r.score ?? '-'}</td>
-          <td>${r.bmi ?? '-'}</td>
-          <td>${r.calIn ?? '-'}</td>
-          <td>${r.calOut ?? '-'}</td>
-          <td style="color:${((r.calIn||0)-(r.calOut||0))<=0?'#34d399':'#f87171'};font-weight:600;">${(r.calIn || 1525) - (r.calOut || 2215)}</td>
-          <td style="color:#34d399;font-weight:600;">${r.prot ?? '-'}</td>
-          <td>${r.fat ?? '-'}</td>
-          <td>${r.carb ?? '-'}</td>
-          <td>${r.sleepH ?? '-'}</td>
-          <td>${r.sleepScore ?? '-'}</td>
-          <td>${(r.sys || 114) + '/' + (r.dia || 71)}</td>
-          <td>${r.pulse ?? '-'}</td>
-        </tr>
-      `).join('');
+      document.querySelector('#table-daily tbody').innerHTML = filtered.map(r => {
+        const hasCal = (typeof r.calIn === 'number' && typeof r.calOut === 'number');
+        const netCal = hasCal ? (r.calIn - r.calOut) : null;
+        const netColor = netCal === null ? 'var(--sub)' : (netCal <= 0 ? '#34d399' : '#f87171');
+        return `
+          <tr>
+            <td><b>${r.date}</b></td>
+            <td style="color:#60a5fa;font-weight:700;">${r.weight ?? '-'}</td>
+            <td>${r.muscle ?? '-'}</td>
+            <td style="color:#fbbf24;font-weight:600;">${r.fatPct != null ? r.fatPct + '%' : '-'}</td>
+            <td>${r.score ?? '-'}</td>
+            <td>${r.bmi ?? '-'}</td>
+            <td>${r.calIn ?? '-'}</td>
+            <td>${r.calOut ?? '-'}</td>
+            <td style="color:${netColor};font-weight:600;">${netCal !== null ? netCal : '-'}</td>
+            <td style="color:#34d399;font-weight:600;">${r.prot ?? '-'}</td>
+            <td>${r.fat ?? '-'}</td>
+            <td>${r.carb ?? '-'}</td>
+            <td>${r.sleepH ?? '-'}</td>
+            <td>${r.sleepScore ?? '-'}</td>
+            <td>${(r.sys != null && r.dia != null) ? (r.sys + '/' + r.dia) : '-'}</td>
+            <td>${r.pulse ?? '-'}</td>
+          </tr>
+        `;
+      }).join('');
     }
 
     function renderDockTab() {
@@ -830,8 +857,7 @@
         sleep: document.getElementById('url-sleep').value.trim() || DEFAULT_SHEET_URLS.sleep,
         bp:    document.getElementById('url-bp').value.trim() || DEFAULT_SHEET_URLS.bp
       };
-      try { localStorage.setItem('health_app_urls_clean_v10', JSON.stringify(urls)); } catch (e) {}
-      initBaseData();
+      try { localStorage.setItem('health_app_urls_clean_v11', JSON.stringify(urls)); } catch (e) {}
       syncAllSheets(true);
     }
 
@@ -841,19 +867,15 @@
       document.getElementById('url-nutr').value  = "";
       document.getElementById('url-sleep').value = DEFAULT_SHEET_URLS.sleep;
       document.getElementById('url-bp').value    = DEFAULT_SHEET_URLS.bp;
-      initBaseData();
       syncAllSheets(true);
     }
 
     window.addEventListener('DOMContentLoaded', () => {
-      // 過去の誤ったURLキャッシュ(v5〜v9)を完全消去
-      ['health_app_urls_v5','health_app_urls_v6','health_app_urls_v7','health_app_urls_v8','health_app_urls_v9','health_app_urls_master'].forEach(k => {
-        try { localStorage.removeItem(k); } catch (e) {}
-      });
-
       initBaseData();
       let saved = {};
-      try { saved = JSON.parse(localStorage.getItem('health_app_urls_clean_v10') || '{}'); } catch (e) {}
+      try {
+        saved = JSON.parse(localStorage.getItem('health_app_urls_clean_v11') || localStorage.getItem('health_app_urls_clean_v10') || '{}');
+      } catch (e) {}
 
       let nUrl = saved.nutr || "";
       if (nUrl.includes(SLEEP_SHEET_ID) || nUrl.includes(BODY_SHEET_ID)) nUrl = "";
