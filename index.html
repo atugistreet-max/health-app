@@ -89,7 +89,7 @@
       <div class="brand-row">
         <span style="font-size:1.4rem;">🩺</span>
         <div>
-          <h1>健康状態 統合管理デスクトップアプリ</h1>
+          <h1>健康状態 統合管理デスクトップアプリ <span style="font-size:0.75rem; color:#34d399; font-weight:normal;">v12 (随時更新対応)</span></h1>
           <div style="font-size:0.75rem; color:var(--sub);" id="period-range-text">表示期間：直近1か月</div>
         </div>
         <span class="badge badge-sync" id="sync-status-badge">⏳ スプレッドシート同期中...</span>
@@ -117,7 +117,7 @@
         <button class="btn" onclick="toggleSyncPanel()" style="padding:4px 9px;">✕ 閉じる</button>
       </div>
       <p style="font-size:0.78rem; color:var(--sub); margin:6px 0;">
-        ①体組成と③④睡眠・バイタルは標準内蔵済みです。②栄養管理シートには『栄養記録（削除禁止）』のURLを入力してください。
+        ①体組成と③④睡眠・バイタルは標準内蔵済みです。②栄養管理シートには『栄養記録（削除禁止）』のURLが入ります。
       </p>
       <div class="url-grid">
         <span>① 体組成シート:</span><input type="text" id="url-body" placeholder="体組成記録スプレッドシートURL">
@@ -221,7 +221,7 @@
     <div id="tab-daily" style="display:none;">
       <div class="table-card">
         <div style="display:flex; justify-content:space-between; align-items:center; margin-bottom:10px; flex-wrap:wrap; gap:8px;">
-          <h3 style="margin:0;">📋 日次統合データ一覧</h3>
+          <h3 style="margin:0;">📋 日次統合データ一覧（未入力の食事項目は「-」で表示され、随時更新されます）</h3>
           <input type="search" id="daily-search" placeholder="日付やメモで検索..." oninput="renderDailyTable()" style="padding:6px 10px; background:var(--bg); color:var(--text); border:1px solid var(--border); border-radius:6px;">
         </div>
         <div style="max-height:540px; overflow-y:auto;">
@@ -296,7 +296,7 @@
       bp:    `https://docs.google.com/spreadsheets/d/${SLEEP_SHEET_ID}/edit?usp=sharing`
     };
 
-    // 初期確定データ（2026-11-04までの確定実績。11-05以降はシートから取得し、未入力項目はnullのまま保持）
+    // 2026-11-04までの確定実績（11-05以降はシートから取得し、未入力の栄養は完全にnullとする）
     const EMBEDDED_BODY_ROWS = [
       { date: "2026-10-05", weight: 54.1, muscle: 23.8, fatPct: 20.9, score: 74, bmi: 21.9, pulse: 61, temp: 36.4, spo2: 98, calIn: 1550, calOut: 2150, carb: 225.0, prot: 92.0, fat: 35.0, sleepH: 5.88, sleepScore: 75, sleepEff: 89, deepH: 0.90, remH: 1.53, lightH: 3.45, sys: 114, dia: 68 },
       { date: "2026-10-06", weight: 53.7, muscle: 23.3, fatPct: 20.5, score: 73, bmi: 21.8, pulse: 61, temp: 36.5, spo2: 98, calIn: 1522, calOut: 2119, carb: 191.63, prot: 111.03, fat: 44.37, sleepH: 7.93, sleepScore: 84, sleepEff: 85, deepH: 1.47, remH: 1.30, lightH: 5.17, sys: 102, dia: 68 },
@@ -322,7 +322,7 @@
       { date: "2026-10-26", weight: 52.9, muscle: 23.4, fatPct: 19.9, score: 74, bmi: 21.4, pulse: 59, temp: 36.4, spo2: 98, calIn: 1470, calOut: 2160, carb: 215.0, prot: 96.0, fat: 33.0, sleepH: 5.92, sleepScore: 75, sleepEff: 96, deepH: 1.05, remH: 1.13, lightH: 3.67, sys: 108, dia: 63 },
       { date: "2026-10-27", weight: 53.0, muscle: 23.4, fatPct: 19.9, score: 74, bmi: 21.5, pulse: 58, temp: 36.5, spo2: 98, calIn: 1350, calOut: 1970, carb: 185.0, prot: 95.0, fat: 31.0, sleepH: 6.40, sleepScore: 76, sleepEff: 93, deepH: 1.22, remH: 1.45, lightH: 3.73, sys: 113, dia: 68 },
       { date: "2026-10-28", weight: 53.3, muscle: 23.5, fatPct: 20.1, score: 74, bmi: 21.6, pulse: 58, temp: 36.5, spo2: 98, calIn: 1430, calOut: 2180, carb: 210.0, prot: 81.0, fat: 32.0, sleepH: 6.00, sleepScore: 68, sleepEff: 82, deepH: 1.03, remH: 1.70, lightH: 3.27, sys: 128, dia: 79 },
-      { date: "2026-10-29", weight: 52.5, muscle: 23.2, fatPct: 20.0, score: 73, bmi: 21.3, waist: 76.3, pulse: 56, temp: 36.6, spo2: 99, calIn: 1450, calOut: 2260, carb: 205.0, prot: 96.0, fat: 33.0, sleepH: 6.03, sleepScore: 76, sleepEff: 94, deepH: 1.15, remH: 1.75, lightH: 3.13, sys: 122, dia: 77 },
+      { date: "2026-10-29", weight: 52.5, muscle: 23.2, fatPct: 20.0, score: 73, bmi: 21.3, waist: 76.3, pulse: 56, temp: 36.6, spo2: 99, calIn: 1452, calOut: 2265, carb: 237.42, prot: 95.98, fat: 29.38, sleepH: 6.03, sleepScore: 76, sleepEff: 94, deepH: 1.15, remH: 1.75, lightH: 3.13, sys: 122, dia: 77 },
       { date: "2026-10-30", weight: 52.8, muscle: 23.1, fatPct: 20.8, score: 73, bmi: 21.4, pulse: 53, temp: 36.5, spo2: 99, calIn: 1350, calOut: 1970, carb: 188.13, prot: 97.90, fat: 32.67, sleepH: 8.05, sleepScore: 82, sleepEff: 91, deepH: 1.35, remH: 2.37, lightH: 4.33, sys: 110, dia: 68 },
       { date: "2026-10-31", weight: 53.2, muscle: 23.9, fatPct: 18.9, score: 75, bmi: 21.6, pulse: 59, temp: 36.6, spo2: 97, calIn: 1670, calOut: 2374, carb: 275.24, prot: 77.34, fat: 35.25, sleepH: 7.35, sleepScore: 83, sleepEff: 95, deepH: 0.82, remH: 2.35, lightH: 4.18, sys: 107, dia: 71 },
       { date: "2026-11-01", weight: 52.6, muscle: 23.4, fatPct: 19.4, score: 74, bmi: 21.3, pulse: 60, temp: 36.4, spo2: 99, calIn: 1574, calOut: 2411, carb: 271.94, prot: 70.51, fat: 28.75, sleepH: 7.28, sleepScore: 83, sleepEff: 99, deepH: 1.17, remH: 2.25, lightH: 3.80, sys: 127, dia: 73 },
@@ -423,6 +423,24 @@
       });
     }
 
+    // 公開CSV URL（/pub?output=csv）と通常編集URL（/edit）の両方に完全対応
+    async function fetchSheetRows2D(url) {
+      if (!url) return null;
+      const sheetId = extractSheetId(url);
+      if (sheetId) {
+        const table = await loadGvizJson(sheetId, extractGid(url));
+        if (!table || !table.rows) return null;
+        return table.rows.map(r => (r.c || []).map(cellStr));
+      } else if (url.includes('docs.google.com/spreadsheets')) {
+        const sep = url.includes('?') ? '&' : '?';
+        const res = await fetch(`${url}${sep}_cb=${Date.now()}`, { cache: 'no-store' });
+        const txt = await res.text();
+        const parsed = Papa.parse(txt, { skipEmptyLines: true });
+        return parsed.data || null;
+      }
+      return null;
+    }
+
     function cellStr(c) {
       if (!c) return '';
       if (c.f !== undefined && c.f !== null && String(c.f).trim() !== '') return String(c.f).trim();
@@ -430,11 +448,10 @@
       return '';
     }
 
-    // ① 体組成シート統合（栄養データがまだない日はダミー値を入れず null のままにする）
-    function mergeBodyGvizTable(table) {
-      if (!table || !table.rows) return;
-      for (const r of table.rows) {
-        const c = (r.c || []).map(cellStr);
+    // ① 体組成シート統合（栄養は一切触れず null のままにする）
+    function mergeBodyRows(rows) {
+      if (!rows) return;
+      for (const c of rows) {
         const dStr = normalizeDateStr(c[1]) || normalizeDateStr(c[0]);
         if (!dStr) continue;
         const isBDate = !!normalizeDateStr(c[1]);
@@ -458,11 +475,10 @@
       }
     }
 
-    // ② 栄養シート統合（朝一番の少量記録でも即時反映＆未入力時はnullのまま保持）
-    function mergeNutrGvizTable(table) {
-      if (!table || !table.rows) return;
-      for (const r of table.rows) {
-        const c = (r.c || []).map(cellStr);
+    // ② 栄養シート統合（カフェオレ1杯の数十kcalでも即時反映！未入力や0の時はnullにする）
+    function mergeNutrRows(rows) {
+      if (!rows) return;
+      for (const c of rows) {
         const joined = c.join(' ');
         // 睡眠シートの誤読込は完全ブロック
         if (/デエビゴ|ゾルピデム|レム睡眠|就寝時刻/.test(joined)) continue;
@@ -473,8 +489,7 @@
         const offset = isBDate ? 0 : -1;
 
         const rawCalIn = String(c[2 + offset] || '').trim();
-        // C列が時刻表記（"1:30" 等）なら睡眠シートなのでスキップ
-        if (rawCalIn.includes(':')) continue;
+        if (rawCalIn.includes(':')) continue; // 時刻表記ならスキップ
 
         const calIn  = parseNum(rawCalIn);       // C列: 摂取カロリー
         const calOut = parseNum(c[3 + offset]);  // D列: 消費カロリー
@@ -482,25 +497,22 @@
         const prot   = parseNum(c[5 + offset]);  // F列: タンパク質(g)
         const fat    = parseNum(c[7 + offset]);  // H列: 総脂質(g)
 
-        // まだ何も栄養数値が入っていない空行はスキップ（nullのまま維持）
-        const hasAnyNutr = (calIn !== null && calIn > 0) || (prot !== null && prot > 0) || (carb !== null && carb > 0);
-        if (!hasAnyNutr) continue;
-
         if (!dailyMap[dStr]) dailyMap[dStr] = { date: dStr };
         const entry = dailyMap[dStr];
-        if (calIn  !== null && calIn  >= 0) entry.calIn  = calIn;
-        if (calOut !== null && calOut >= 0) entry.calOut = calOut;
-        if (carb   !== null && carb   >= 0) entry.carb   = carb;
-        if (prot   !== null && prot   >= 0) entry.prot   = prot;
-        if (fat    !== null && fat    >= 0) entry.fat    = fat;
+
+        // 1kcal以上（または各栄養素が0より大きい）ならカフェオレ1杯でも即時反映！空欄または0ならnullにする
+        entry.calIn  = (calIn  !== null && calIn  > 0) ? calIn  : null;
+        entry.calOut = (calOut !== null && calOut > 0) ? calOut : null;
+        entry.carb   = (carb   !== null && (carb > 0 || (calIn !== null && calIn > 0))) ? carb : null;
+        entry.prot   = (prot   !== null && (prot > 0 || (calIn !== null && calIn > 0))) ? prot : null;
+        entry.fat    = (fat    !== null && (fat  > 0 || (calIn !== null && calIn > 0))) ? fat  : null;
       }
     }
 
-    // ③④ 睡眠・血圧シート統合（栄養データがまだない日はダミー値を入れず null のままにする）
-    function mergeSleepAndBpGvizTable(table) {
-      if (!table || !table.rows) return;
-      for (const r of table.rows) {
-        const c = (r.c || []).map(cellStr);
+    // ③④ 睡眠・血圧シート統合（栄養は一切触れず null のままにする）
+    function mergeSleepAndBpRows(rows) {
+      if (!rows) return;
+      for (const c of rows) {
         const dStr = normalizeDateStr(c[1]) || normalizeDateStr(c[0]);
         if (!dStr) continue;
         const isBDate = !!normalizeDateStr(c[1]);
@@ -550,17 +562,17 @@
       }
 
       try {
-        if (extractSheetId(bodyUrl)) {
-          const t = await loadGvizJson(extractSheetId(bodyUrl), extractGid(bodyUrl));
-          mergeBodyGvizTable(t);
+        if (bodyUrl) {
+          const r = await fetchSheetRows2D(bodyUrl);
+          mergeBodyRows(r);
         }
-        if (nutrUrl && extractSheetId(nutrUrl)) {
-          const t = await loadGvizJson(extractSheetId(nutrUrl), extractGid(nutrUrl));
-          mergeNutrGvizTable(t);
+        if (nutrUrl) {
+          const r = await fetchSheetRows2D(nutrUrl);
+          mergeNutrRows(r);
         }
-        if (extractSheetId(sleepUrl)) {
-          const t = await loadGvizJson(extractSheetId(sleepUrl), extractGid(sleepUrl));
-          mergeSleepAndBpGvizTable(t);
+        if (sleepUrl) {
+          const r = await fetchSheetRows2D(sleepUrl);
+          mergeSleepAndBpRows(r);
         }
       } catch (e) { console.warn('Sync notice:', e); }
 
@@ -588,7 +600,6 @@
       return all.slice(-currentPeriodDays);
     }
 
-    // 記録がある日（nullでない日）だけで正確に平均を算出
     function avg(arr, key, digits = 1) {
       const vals = arr.map(r => r[key]).filter(v => typeof v === 'number' && !isNaN(v));
       if (!vals.length) return '--';
@@ -613,7 +624,6 @@
       document.getElementById('kpi-muscle').innerText = `${avg(rows, 'muscle', 1)} kg / ${avg(rows, 'fatPct', 1)} %`;
       document.getElementById('kpi-muscle-sub').innerText = `InBody点数 平均: ${avg(rows, 'score', 0)} 点`;
 
-      // 栄養記録が入っている日だけで平均カロリー収支を計算（未入力の日は除外）
       const nutrRows = rows.filter(r => typeof r.calIn === 'number' && typeof r.calOut === 'number');
       const avgIn  = nutrRows.length ? Math.round(nutrRows.reduce((a, b) => a + b.calIn, 0) / nutrRows.length) : '--';
       const avgOut = nutrRows.length ? Math.round(nutrRows.reduce((a, b) => a + b.calOut, 0) / nutrRows.length) : '--';
@@ -651,7 +661,7 @@
         }
       });
 
-      // ② カロリー収支グラフ（未入力の日はダミー値を出さず null にする）
+      // ② カロリー収支グラフ
       drawChart('chart-cal', {
         type: 'bar',
         data: {
@@ -694,7 +704,7 @@
         }
       });
 
-      // ④ PFCバランス積上げグラフ（未入力の日はダミー値を出さず null にする）
+      // ④ PFCバランス積上げグラフ
       drawChart('chart-pfc', {
         type: 'bar',
         data: {
@@ -751,7 +761,6 @@
       renderDockTab();
     }
 
-    // 日次データ一覧表（未入力項目はダミー値を一切出さず「-」を表示）
     function renderDailyTable() {
       const q = (document.getElementById('daily-search')?.value || '').toLowerCase();
       const allDesc = Object.values(dailyMap).sort((a, b) => b.date.localeCompare(a.date));
@@ -857,12 +866,11 @@
         sleep: document.getElementById('url-sleep').value.trim() || DEFAULT_SHEET_URLS.sleep,
         bp:    document.getElementById('url-bp').value.trim() || DEFAULT_SHEET_URLS.bp
       };
-      try { localStorage.setItem('health_app_urls_clean_v11', JSON.stringify(urls)); } catch (e) {}
+      try { localStorage.setItem('health_app_urls_v12', JSON.stringify(urls)); } catch (e) {}
       syncAllSheets(true);
     }
 
     function resetDefaultUrls() {
-      try { localStorage.clear(); } catch (e) {}
       document.getElementById('url-body').value  = DEFAULT_SHEET_URLS.body;
       document.getElementById('url-nutr').value  = "";
       document.getElementById('url-sleep').value = DEFAULT_SHEET_URLS.sleep;
@@ -870,14 +878,35 @@
       syncAllSheets(true);
     }
 
+    // ブラウザ内のすべての保存領域から『栄養記録』シートのURLを自動検出して引き継ぐ
+    function findSavedNutritionUrl() {
+      try {
+        for (let i = 0; i < localStorage.length; i++) {
+          const key = localStorage.key(i);
+          const val = localStorage.getItem(key) || '';
+          if (!val.includes('docs.google.com/spreadsheets')) continue;
+          try {
+            const parsed = JSON.parse(val);
+            for (const prop of ['nutr', 'nutrition', 'urlNutr', 'n']) {
+              const u = parsed[prop];
+              if (typeof u === 'string' && u.includes('docs.google.com/spreadsheets') && !u.includes(SLEEP_SHEET_ID) && !u.includes(BODY_SHEET_ID)) {
+                return u.trim();
+              }
+            }
+          } catch (e) {}
+        }
+      } catch (e) {}
+      return "";
+    }
+
     window.addEventListener('DOMContentLoaded', () => {
       initBaseData();
       let saved = {};
       try {
-        saved = JSON.parse(localStorage.getItem('health_app_urls_clean_v11') || localStorage.getItem('health_app_urls_clean_v10') || '{}');
+        saved = JSON.parse(localStorage.getItem('health_app_urls_v12') || localStorage.getItem('health_app_urls_clean_v11') || localStorage.getItem('health_app_urls_clean_v10') || '{}');
       } catch (e) {}
 
-      let nUrl = saved.nutr || "";
+      let nUrl = saved.nutr || findSavedNutritionUrl() || "";
       if (nUrl.includes(SLEEP_SHEET_ID) || nUrl.includes(BODY_SHEET_ID)) nUrl = "";
 
       document.getElementById('url-body').value  = saved.body  || DEFAULT_SHEET_URLS.body;
