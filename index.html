@@ -120,7 +120,7 @@
       <div class="url-grid">
         <span>① 体組成シート:</span><input type="text" id="url-body" placeholder="体組成記録スプレッドシートURL">
         <span>② 栄養管理シート:</span><input type="text" id="url-nutr" placeholder="栄養記録スプレッドシートURL">
-        <span>③ 睡眠記録シート:</span><input type="text" id="url-sleep" placeholder="睡眠記録スプレッドシートURL">
+        <span>③ 睡眠記録シート:</span><input type="text" id="url-sleep" placeholder="睡眠記録スプレッドシートURL（スリープバイタル等）">
         <span>④ 血圧記録シート:</span><input type="text" id="url-bp" placeholder="血圧記録スプレッドシートURL">
       </div>
       <div style="display:flex; gap:8px; flex-wrap:wrap;">
@@ -285,9 +285,9 @@
 
     const DEFAULT_SHEET_URLS = {
       body:  "https://docs.google.com/spreadsheets/d/1FSdAN6fJL7TKezFrrXfEXRooWL7Nn6Uxyh-XY84zos4/edit?gid=0",
-      nutr:  "",
-      sleep: "",
-      bp:    ""
+      nutr:  "https://docs.google.com/spreadsheets/d/1QqxP-JhUShpvAvaH6jz2FuJwWCBfjsGk2A1DHD5ch8A/edit?usp=sharing",
+      sleep: "https://docs.google.com/spreadsheets/d/1QqxP-JhUShpvAvaH6jz2FuJwWCBfjsGk2A1DHD5ch8A/edit?usp=sharing",
+      bp:    "https://docs.google.com/spreadsheets/d/1QqxP-JhUShpvAvaH6jz2FuJwWCBfjsGk2A1DHD5ch8A/edit?usp=sharing"
     };
 
     const EMBEDDED_BODY_ROWS = [
@@ -307,21 +307,21 @@
       { date: "2026-10-18", weight: 53.2, muscle: 23.4, fatPct: 19.9, score: 74, bmi: 21.1, pulse: 57, temp: 36.5, spo2: 98, calIn: 1530, calOut: 2210, carb: 220.0, prot: 90.0, fat: 35.0, sleepH: 5.0, sleepScore: 61, deepH: 0.8, remH: 1.2, lightH: 3.0, sys: 118, dia: 70 },
       { date: "2026-10-19", weight: 52.8, muscle: 23.2, fatPct: 20.1, score: 73, bmi: 20.9, pulse: 59, temp: 36.4, spo2: 98, calIn: 1480, calOut: 2120, carb: 205.0, prot: 82.0, fat: 32.0, sleepH: 5.0, sleepScore: 67, deepH: 0.8, remH: 1.3, lightH: 2.9, sys: 115, dia: 68 },
       { date: "2026-10-20", weight: 53.1, muscle: 23.5, fatPct: 19.6, score: 74, bmi: 21.0, pulse: 56, temp: 36.5, spo2: 98, calIn: 1560, calOut: 2260, carb: 235.0, prot: 94.0, fat: 37.0, sleepH: 7.1, sleepScore: 78, deepH: 1.2, remH: 1.7, lightH: 4.2, sys: 120, dia: 72 },
-      { date: "2026-10-21", weight: 52.9, muscle: 23.4, fatPct: 19.8, score: 74, bmi: 21.0, pulse: 58, temp: 36.5, spo2: 98, calIn: 1520, calOut: 2190, carb: 220.0, prot: 89.0, fat: 34.0, sleepH: 5.0, sleepScore: 64, deepH: 0.8, remH: 1.3, lightH: 2.9, sys: 111, dia: 70 },
-      { date: "2026-10-22", weight: 53.0, muscle: 23.4, fatPct: 19.9, score: 74, bmi: 21.0, pulse: 57, temp: 36.5, spo2: 98, calIn: 1510, calOut: 2170, carb: 215.0, prot: 87.0, fat: 33.0, sleepH: 5.0, sleepScore: 65, deepH: 0.8, remH: 1.3, lightH: 2.9, sys: 113, dia: 71 },
-      { date: "2026-10-23", weight: 53.5, muscle: 23.6, fatPct: 20.1, score: 74, bmi: 21.7, pulse: 57, temp: 36.3, spo2: 99, calIn: 1440, calOut: 2130, carb: 200.0, prot: 84.0, fat: 31.0, sleepH: 6.0, sleepScore: 73, deepH: 1.0, remH: 1.6, lightH: 3.4, sys: 110, dia: 67 },
-      { date: "2026-10-24", weight: 53.7, muscle: 23.5, fatPct: 20.5, score: 74, bmi: 21.8, pulse: 57, temp: 36.6, spo2: 98, calIn: 1450, calOut: 2150, carb: 205.0, prot: 85.0, fat: 32.0, sleepH: 6.0, sleepScore: 69, deepH: 1.0, remH: 1.6, lightH: 3.4, sys: 112, dia: 70 },
-      { date: "2026-10-25", weight: 52.8, muscle: 23.5, fatPct: 19.5, score: 74, bmi: 21.4, pulse: 60, temp: 36.5, spo2: 98, calIn: 1450, calOut: 2010, carb: 195.0, prot: 83.0, fat: 30.0, sleepH: 2.0, sleepScore: 67, deepH: 0.3, remH: 0.5, lightH: 1.2, sys: 120, dia: 75 },
-      { date: "2026-10-26", weight: 52.9, muscle: 23.4, fatPct: 19.9, score: 74, bmi: 21.4, pulse: 66, temp: 36.4, spo2: 98, calIn: 1630, calOut: 2420, carb: 250.0, prot: 95.0, fat: 38.0, sleepH: 5.0, sleepScore: 68, deepH: 0.8, remH: 1.3, lightH: 2.9, sys: 117, dia: 70 },
-      { date: "2026-10-27", weight: 53.0, muscle: 23.4, fatPct: 19.9, score: 74, bmi: 21.5, pulse: 61, temp: 36.5, spo2: 98, calIn: 1600, calOut: 2460, carb: 245.0, prot: 92.0, fat: 36.0, sleepH: 6.0, sleepScore: 61, deepH: 1.0, remH: 1.6, lightH: 3.4, sys: 117, dia: 70 },
-      { date: "2026-10-28", weight: 53.3, muscle: 23.5, fatPct: 20.1, score: 74, bmi: 21.6, pulse: 55, temp: 36.5, spo2: 98, calIn: 1480, calOut: 2180, carb: 210.0, prot: 86.0, fat: 32.0, sleepH: 6.0, sleepScore: 69, deepH: 1.0, remH: 1.6, lightH: 3.4, sys: 117, dia: 70 },
-      { date: "2026-10-29", weight: 52.5, muscle: 23.2, fatPct: 20.0, score: 73, bmi: 21.3, waist: 76.3, pulse: 59, temp: 36.6, spo2: 99, calIn: 1350, calOut: 2020, carb: 180.0, prot: 80.0, fat: 28.0, sleepH: 7.9, sleepScore: 74, deepH: 1.3, remH: 2.1, lightH: 4.5, sys: 115, dia: 71 },
-      { date: "2026-10-30", weight: 52.8, muscle: 23.1, fatPct: 20.8, score: 73, bmi: 21.4, pulse: 54, temp: 36.5, spo2: 99, calIn: 1670, calOut: 2380, carb: 260.0, prot: 98.0, fat: 40.0, sleepH: 7.0, sleepScore: 75, deepH: 1.1, remH: 1.9, lightH: 4.0, sys: 114, dia: 68 },
-      { date: "2026-10-31", weight: 53.2, muscle: 23.9, fatPct: 18.9, score: 75, bmi: 21.6, pulse: 58, temp: 36.6, spo2: 97, calIn: 1580, calOut: 2430, carb: 240.0, prot: 91.0, fat: 37.0, sleepH: 6.0, sleepScore: 75, deepH: 1.0, remH: 1.6, lightH: 3.4, sys: 117, dia: 73 },
-      { date: "2026-11-01", weight: 52.6, muscle: 23.4, fatPct: 19.4, score: 74, bmi: 21.3, pulse: 60, temp: 36.4, spo2: 99, calIn: 1570, calOut: 2170, carb: 235.0, prot: 89.0, fat: 35.0, sleepH: 2.0, sleepScore: 60, deepH: 0.3, remH: 0.5, lightH: 1.2, sys: 111, dia: 69 },
-      { date: "2026-11-02", weight: 52.4, muscle: 23.0, fatPct: 20.4, score: 73, bmi: 21.2, pulse: 58, temp: 36.4, spo2: 98, calIn: 1560, calOut: 2370, carb: 230.0, prot: 88.0, fat: 34.0, sleepH: 6.0, sleepScore: 68, deepH: 1.0, remH: 1.6, lightH: 3.4, sys: 106, dia: 71 },
-      { date: "2026-11-03", weight: 52.6, muscle: 23.1, fatPct: 20.2, score: 73, bmi: 21.3, pulse: 53, temp: 36.4, spo2: 99, gripR: 32.6, gripL: 31.8, calIn: 1540, calOut: 2330, carb: 225.0, prot: 87.0, fat: 33.0, sleepH: 7.0, sleepScore: 73, deepH: 1.2, remH: 1.9, lightH: 3.9, sys: 110, dia: 67 },
-      { date: "2026-11-04", weight: 52.4, muscle: 23.4, fatPct: 19.1, score: 74, bmi: 21.2, pulse: 55, temp: 36.5, spo2: 98, calIn: 1513, calOut: 2201, carb: 220.0, prot: 88.5, fat: 32.0, sleepH: 6.58, sleepScore: 76.6, deepH: 1.0, remH: 1.7, lightH: 3.8, sys: 114, dia: 71 }
+      { date: "2026-10-21", weight: 52.9, muscle: 23.4, fatPct: 19.8, score: 74, bmi: 21.0, pulse: 58, temp: 36.5, spo2: 98, calIn: 1520, calOut: 2190, carb: 220.0, prot: 89.0, fat: 34.0, sleepH: 7.6, sleepScore: 86, deepH: 1.1, remH: 2.1, lightH: 4.4, sys: 104, dia: 66 },
+      { date: "2026-10-22", weight: 53.0, muscle: 23.4, fatPct: 19.9, score: 74, bmi: 21.0, pulse: 57, temp: 36.5, spo2: 98, calIn: 1510, calOut: 2170, carb: 215.0, prot: 87.0, fat: 33.0, sleepH: 5.5, sleepScore: 72, deepH: 0.8, remH: 1.4, lightH: 3.2, sys: 113, dia: 70 },
+      { date: "2026-10-23", weight: 53.5, muscle: 23.6, fatPct: 20.1, score: 74, bmi: 21.7, pulse: 57, temp: 36.3, spo2: 99, calIn: 1440, calOut: 2130, carb: 200.0, prot: 84.0, fat: 31.0, sleepH: 6.0, sleepScore: 73, deepH: 1.0, remH: 1.6, lightH: 3.4, sys: 124, dia: 80 },
+      { date: "2026-10-24", weight: 53.7, muscle: 23.5, fatPct: 20.5, score: 74, bmi: 21.8, pulse: 57, temp: 36.6, spo2: 98, calIn: 1450, calOut: 2150, carb: 205.0, prot: 85.0, fat: 32.0, sleepH: 6.9, sleepScore: 81, deepH: 1.2, remH: 1.6, lightH: 3.9, sys: 118, dia: 69 },
+      { date: "2026-10-25", weight: 52.8, muscle: 23.5, fatPct: 19.5, score: 74, bmi: 21.4, pulse: 60, temp: 36.5, spo2: 98, calIn: 1450, calOut: 2010, carb: 195.0, prot: 83.0, fat: 30.0, sleepH: 6.0, sleepScore: 77, deepH: 1.2, remH: 1.5, lightH: 3.4, sys: 114, dia: 66 },
+      { date: "2026-10-26", weight: 52.9, muscle: 23.4, fatPct: 19.9, score: 74, bmi: 21.4, pulse: 66, temp: 36.4, spo2: 98, calIn: 1630, calOut: 2420, carb: 250.0, prot: 95.0, fat: 38.0, sleepH: 6.0, sleepScore: 75, deepH: 1.0, remH: 1.1, lightH: 3.7, sys: 108, dia: 63 },
+      { date: "2026-10-27", weight: 53.0, muscle: 23.4, fatPct: 19.9, score: 74, bmi: 21.5, pulse: 61, temp: 36.5, spo2: 98, calIn: 1600, calOut: 2460, carb: 245.0, prot: 92.0, fat: 36.0, sleepH: 6.4, sleepScore: 76, deepH: 1.2, remH: 1.5, lightH: 3.7, sys: 113, dia: 68 },
+      { date: "2026-10-28", weight: 53.3, muscle: 23.5, fatPct: 20.1, score: 74, bmi: 21.6, pulse: 55, temp: 36.5, spo2: 98, calIn: 1480, calOut: 2180, carb: 210.0, prot: 86.0, fat: 32.0, sleepH: 6.0, sleepScore: 68, deepH: 1.0, remH: 1.6, lightH: 3.2, sys: 128, dia: 79 },
+      { date: "2026-10-29", weight: 52.5, muscle: 23.2, fatPct: 20.0, score: 73, bmi: 21.3, waist: 76.3, pulse: 59, temp: 36.6, spo2: 99, calIn: 1350, calOut: 2020, carb: 180.0, prot: 80.0, fat: 28.0, sleepH: 6.0, sleepScore: 76, deepH: 1.2, remH: 1.7, lightH: 3.1, sys: 122, dia: 77 },
+      { date: "2026-10-30", weight: 52.8, muscle: 23.1, fatPct: 20.8, score: 73, bmi: 21.4, pulse: 54, temp: 36.5, spo2: 99, calIn: 1670, calOut: 2380, carb: 260.0, prot: 98.0, fat: 40.0, sleepH: 8.1, sleepScore: 82, deepH: 1.3, remH: 2.4, lightH: 4.2, sys: 110, dia: 68 },
+      { date: "2026-10-31", weight: 53.2, muscle: 23.9, fatPct: 18.9, score: 75, bmi: 21.6, pulse: 58, temp: 36.6, spo2: 97, calIn: 1580, calOut: 2430, carb: 240.0, prot: 91.0, fat: 37.0, sleepH: 7.4, sleepScore: 83, deepH: 0.8, remH: 2.4, lightH: 4.2, sys: 107, dia: 71 },
+      { date: "2026-11-01", weight: 52.6, muscle: 23.4, fatPct: 19.4, score: 74, bmi: 21.3, pulse: 60, temp: 36.4, spo2: 99, calIn: 1570, calOut: 2170, carb: 235.0, prot: 89.0, fat: 35.0, sleepH: 7.3, sleepScore: 83, deepH: 1.2, remH: 2.2, lightH: 3.8, sys: 127, dia: 73 },
+      { date: "2026-11-02", weight: 52.4, muscle: 23.0, fatPct: 20.4, score: 73, bmi: 21.2, pulse: 58, temp: 36.4, spo2: 98, calIn: 1560, calOut: 2370, carb: 230.0, prot: 88.0, fat: 34.0, sleepH: 5.2, sleepScore: 67, deepH: 0.9, remH: 1.5, lightH: 2.4, sys: 116, dia: 73 },
+      { date: "2026-11-03", weight: 52.6, muscle: 23.1, fatPct: 20.2, score: 73, bmi: 21.3, pulse: 53, temp: 36.4, spo2: 99, gripR: 32.6, gripL: 31.8, calIn: 1540, calOut: 2330, carb: 225.0, prot: 87.0, fat: 33.0, sleepH: 6.2, sleepScore: 76, deepH: 1.2, remH: 1.7, lightH: 3.3, sys: 109, dia: 66 },
+      { date: "2026-11-04", weight: 52.4, muscle: 23.4, fatPct: 19.1, score: 74, bmi: 21.2, pulse: 55, temp: 36.5, spo2: 98, calIn: 1513, calOut: 2201, carb: 220.0, prot: 88.5, fat: 32.0, sleepH: 7.4, sleepScore: 81, deepH: 0.7, remH: 2.2, lightH: 4.5, sys: 109, dia: 70 }
     ];
 
     const DOCK_HISTORY = [
@@ -345,7 +345,6 @@
 
     function toggleSyncPanel() { document.getElementById('sync-panel').classList.toggle('open'); }
 
-    // 時刻文字列（"7:56", "1:18" 等）を時間（数値）に変換
     function parseTimeToHours(val) {
       if (val === null || val === undefined || val === '') return 0;
       if (typeof val === 'number') return val;
@@ -384,9 +383,7 @@
 
     function initBaseData() {
       dailyMap = {};
-      EMBEDDED_BODY_ROWS.forEach(r => {
-        dailyMap[r.date] = { ...r };
-      });
+      EMBEDDED_BODY_ROWS.forEach(r => { dailyMap[r.date] = { ...r }; });
     }
 
     function extractSheetId(url) {
@@ -426,7 +423,6 @@
       return '';
     }
 
-    // 体組成シート統合
     function mergeBodyGvizTable(table) {
       if (!table || !table.rows) return;
       for (const r of table.rows) {
@@ -437,7 +433,6 @@
         const offset = isBDate ? 0 : -1;
         const w = parseNum(cellStr(c[3 + offset]));
         if (!w || w < 30 || w > 120) continue;
-
         if (!dailyMap[dStr]) dailyMap[dStr] = { date: dStr };
         const entry = dailyMap[dStr];
         entry.weight = w;
@@ -449,12 +444,9 @@
         entry.temp   = parseNum(cellStr(c[12 + offset])) ?? entry.temp;
         entry.pulse  = parseNum(cellStr(c[13 + offset])) ?? entry.pulse;
         entry.spo2   = parseNum(cellStr(c[14 + offset])) ?? entry.spo2;
-        entry.gripR  = parseNum(cellStr(c[15 + offset])) ?? entry.gripR;
-        entry.gripL  = parseNum(cellStr(c[16 + offset])) ?? entry.gripL;
       }
     }
 
-    // 栄養シート統合（正確な列指定: B=摂取, C=消費, D=炭水化物, E=タンパク質, G=総脂質）
     function mergeNutrGvizTable(table) {
       if (!table || !table.rows) return;
       for (const r of table.rows) {
@@ -463,15 +455,14 @@
         if (!dStr) continue;
         if (!dailyMap[dStr]) dailyMap[dStr] = { date: dStr };
         const entry = dailyMap[dStr];
-        entry.calIn  = parseNum(cellStr(c[1])) ?? entry.calIn;   // B: 摂取カロリー
-        entry.calOut = parseNum(cellStr(c[2])) ?? entry.calOut;  // C: 消費カロリー
-        entry.carb   = parseNum(cellStr(c[3])) ?? entry.carb;    // D: 炭水化物
-        entry.prot   = parseNum(cellStr(c[4])) ?? entry.prot;    // E: タンパク質
-        entry.fat    = parseNum(cellStr(c[6])) ?? entry.fat;     // G: 総脂質
+        entry.calIn  = parseNum(cellStr(c[1])) ?? entry.calIn;
+        entry.calOut = parseNum(cellStr(c[2])) ?? entry.calOut;
+        entry.carb   = parseNum(cellStr(c[3])) ?? entry.carb;
+        entry.prot   = parseNum(cellStr(c[4])) ?? entry.prot;
+        entry.fat    = parseNum(cellStr(c[6])) ?? entry.fat;
       }
     }
 
-    // 睡眠シート統合（B=日付, G=トータル睡眠, H=スコア, I=効率, L=レム, M=浅い, N=深い）
     function mergeSleepGvizTable(table) {
       if (!table || !table.rows) return;
       for (const r of table.rows) {
@@ -480,16 +471,15 @@
         if (!dStr) continue;
         if (!dailyMap[dStr]) dailyMap[dStr] = { date: dStr };
         const entry = dailyMap[dStr];
-        entry.sleepH     = parseTimeToHours(cellStr(c[6])) || entry.sleepH; // G: トータル睡眠
-        entry.sleepScore = parseNum(cellStr(c[7])) ?? entry.sleepScore;    // H: スコア
-        entry.sleepEff   = parseNum(cellStr(c[8])) ?? entry.sleepEff;      // I: 効率
-        entry.remH       = parseTimeToHours(cellStr(c[11])) || entry.remH; // L: レム睡眠
-        entry.lightH     = parseTimeToHours(cellStr(c[12])) || entry.lightH;// M: 浅い睡眠
-        entry.deepH      = parseTimeToHours(cellStr(c[13])) || entry.deepH; // N: 深い睡眠
+        entry.sleepH     = parseTimeToHours(cellStr(c[6])) || entry.sleepH;
+        entry.sleepScore = parseNum(cellStr(c[7])) ?? entry.sleepScore;
+        entry.sleepEff   = parseNum(cellStr(c[8])) ?? entry.sleepEff;
+        entry.remH       = parseTimeToHours(cellStr(c[11])) || entry.remH;
+        entry.lightH     = parseTimeToHours(cellStr(c[12])) || entry.lightH;
+        entry.deepH      = parseTimeToHours(cellStr(c[13])) || entry.deepH;
       }
     }
 
-    // 血圧シート統合
     function mergeBpGvizTable(table) {
       if (!table || !table.rows) return;
       for (const r of table.rows) {
@@ -508,9 +498,9 @@
       badge.innerText = '⏳ スプレッドシート同期中...';
 
       const bodyUrl  = document.getElementById('url-body').value.trim() || DEFAULT_SHEET_URLS.body;
-      const nutrUrl  = document.getElementById('url-nutr').value.trim();
-      const sleepUrl = document.getElementById('url-sleep').value.trim();
-      const bpUrl    = document.getElementById('url-bp').value.trim();
+      const nutrUrl  = document.getElementById('url-nutr').value.trim() || DEFAULT_SHEET_URLS.nutr;
+      const sleepUrl = document.getElementById('url-sleep').value.trim() || DEFAULT_SHEET_URLS.sleep;
+      const bpUrl    = document.getElementById('url-bp').value.trim() || DEFAULT_SHEET_URLS.bp;
 
       try {
         if (extractSheetId(bodyUrl)) {
@@ -614,7 +604,7 @@
         }
       });
 
-      // ② カロリー収支（折れ線収支 ＆ プラス位置の摂取・消費棒グラフ）
+      // ② カロリー収支グラフ
       drawChart('chart-cal', {
         type: 'bar',
         data: {
@@ -653,7 +643,7 @@
         }
       });
 
-      // ④ PFCバランス 積み上げグラフ（炭水化物・タンパク質・脂質）
+      // ④ PFCバランス積上げグラフ
       drawChart('chart-pfc', {
         type: 'bar',
         data: {
@@ -670,7 +660,7 @@
         }
       });
 
-      // ⑤ 睡眠内訳 積み上げグラフ（深い・レム・浅い睡眠 ＆ スコア折れ線）
+      // ⑤ 睡眠構成積上げグラフ（深い・レム・浅い睡眠 ＆ スコア）
       drawChart('chart-sleep', {
         type: 'bar',
         data: {
@@ -805,20 +795,23 @@
         sleep: document.getElementById('url-sleep').value.trim(),
         bp:    document.getElementById('url-bp').value.trim()
       };
-      try { localStorage.setItem('health_app_urls_v6', JSON.stringify(urls)); } catch (e) {}
+      try { localStorage.setItem('health_app_urls_v7', JSON.stringify(urls)); } catch (e) {}
       syncAllSheets(true);
     }
 
     function resetDefaultUrls() {
       document.getElementById('url-body').value = DEFAULT_SHEET_URLS.body;
-      try { localStorage.setItem('health_app_urls_v6', JSON.stringify(DEFAULT_SHEET_URLS)); } catch (e) {}
+      document.getElementById('url-nutr').value = DEFAULT_SHEET_URLS.nutr;
+      document.getElementById('url-sleep').value = DEFAULT_SHEET_URLS.sleep;
+      document.getElementById('url-bp').value    = DEFAULT_SHEET_URLS.bp;
+      try { localStorage.setItem('health_app_urls_v7', JSON.stringify(DEFAULT_SHEET_URLS)); } catch (e) {}
       syncAllSheets(true);
     }
 
     window.addEventListener('DOMContentLoaded', () => {
       initBaseData();
       let saved = {};
-      try { saved = JSON.parse(localStorage.getItem('health_app_urls_v6') || '{}'); } catch (e) {}
+      try { saved = JSON.parse(localStorage.getItem('health_app_urls_v7') || '{}'); } catch (e) {}
       document.getElementById('url-body').value  = saved.body  || DEFAULT_SHEET_URLS.body;
       document.getElementById('url-nutr').value  = saved.nutr  || DEFAULT_SHEET_URLS.nutr;
       document.getElementById('url-sleep').value = saved.sleep || DEFAULT_SHEET_URLS.sleep;
