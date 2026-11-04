@@ -120,7 +120,7 @@
       <div class="url-grid">
         <span>① 体組成シート:</span><input type="text" id="url-body" placeholder="体組成記録スプレッドシートURL">
         <span>② 栄養管理シート:</span><input type="text" id="url-nutr" placeholder="栄養記録スプレッドシートURL">
-        <span>③ 睡眠記録シート:</span><input type="text" id="url-sleep" placeholder="睡眠記録スプレッドシートURL（スリープバイタル等）">
+        <span>③ 睡眠記録シート:</span><input type="text" id="url-sleep" placeholder="睡眠記録スプレッドシートURL">
         <span>④ 血圧記録シート:</span><input type="text" id="url-bp" placeholder="血圧記録スプレッドシートURL">
       </div>
       <div style="display:flex; gap:8px; flex-wrap:wrap;">
@@ -447,6 +447,7 @@
       }
     }
 
+    // ★修正：栄養記録の正しい列指定 (B=日付, C=摂取, D=消費, E=炭水化物, F=タンパク質, H=総脂質)
     function mergeNutrGvizTable(table) {
       if (!table || !table.rows) return;
       for (const r of table.rows) {
@@ -455,11 +456,11 @@
         if (!dStr) continue;
         if (!dailyMap[dStr]) dailyMap[dStr] = { date: dStr };
         const entry = dailyMap[dStr];
-        entry.calIn  = parseNum(cellStr(c[1])) ?? entry.calIn;
-        entry.calOut = parseNum(cellStr(c[2])) ?? entry.calOut;
-        entry.carb   = parseNum(cellStr(c[3])) ?? entry.carb;
-        entry.prot   = parseNum(cellStr(c[4])) ?? entry.prot;
-        entry.fat    = parseNum(cellStr(c[6])) ?? entry.fat;
+        entry.calIn  = parseNum(cellStr(c[2])) ?? entry.calIn;   // C: 摂取カロリー
+        entry.calOut = parseNum(cellStr(c[3])) ?? entry.calOut;  // D: 消費カロリー
+        entry.carb   = parseNum(cellStr(c[4])) ?? entry.carb;    // E: 炭水化物
+        entry.prot   = parseNum(cellStr(c[5])) ?? entry.prot;    // F: タンパク質
+        entry.fat    = parseNum(cellStr(c[7])) ?? entry.fat;     // H: 総脂質
       }
     }
 
@@ -795,7 +796,7 @@
         sleep: document.getElementById('url-sleep').value.trim(),
         bp:    document.getElementById('url-bp').value.trim()
       };
-      try { localStorage.setItem('health_app_urls_v7', JSON.stringify(urls)); } catch (e) {}
+      try { localStorage.setItem('health_app_urls_v8', JSON.stringify(urls)); } catch (e) {}
       syncAllSheets(true);
     }
 
@@ -804,14 +805,14 @@
       document.getElementById('url-nutr').value = DEFAULT_SHEET_URLS.nutr;
       document.getElementById('url-sleep').value = DEFAULT_SHEET_URLS.sleep;
       document.getElementById('url-bp').value    = DEFAULT_SHEET_URLS.bp;
-      try { localStorage.setItem('health_app_urls_v7', JSON.stringify(DEFAULT_SHEET_URLS)); } catch (e) {}
+      try { localStorage.setItem('health_app_urls_v8', JSON.stringify(DEFAULT_SHEET_URLS)); } catch (e) {}
       syncAllSheets(true);
     }
 
     window.addEventListener('DOMContentLoaded', () => {
       initBaseData();
       let saved = {};
-      try { saved = JSON.parse(localStorage.getItem('health_app_urls_v7') || '{}'); } catch (e) {}
+      try { saved = JSON.parse(localStorage.getItem('health_app_urls_v8') || '{}'); } catch (e) {}
       document.getElementById('url-body').value  = saved.body  || DEFAULT_SHEET_URLS.body;
       document.getElementById('url-nutr').value  = saved.nutr  || DEFAULT_SHEET_URLS.nutr;
       document.getElementById('url-sleep').value = saved.sleep || DEFAULT_SHEET_URLS.sleep;
