@@ -89,7 +89,7 @@
       <div class="brand-row">
         <span style="font-size:1.4rem;">🩺</span>
         <div>
-          <h1>健康状態 統合管理デスクトップアプリ <span style="font-size:0.75rem; color:#34d399; font-weight:normal;">v12 (随時更新対応)</span></h1>
+          <h1>健康状態 統合管理デスクトップアプリ <span style="font-size:0.75rem; color:#34d399; font-weight:normal;">v13 (昼寝積上・随時更新対応)</span></h1>
           <div style="font-size:0.75rem; color:var(--sub);" id="period-range-text">表示期間：直近1か月</div>
         </div>
         <span class="badge badge-sync" id="sync-status-badge">⏳ スプレッドシート同期中...</span>
@@ -204,7 +204,7 @@
 
         <div class="chart-card">
           <div class="chart-header">
-            <h3>⑤ 睡眠構成・スコア推移（深い・レム・浅い睡眠 積上 ＆ スコア）</h3>
+            <h3>⑤ 睡眠構成・スコア推移（深い・レム・浅い睡眠・昼寝 積上 ＆ スコア）</h3>
           </div>
           <div class="chart-wrap"><canvas id="chart-sleep"></canvas></div>
         </div>
@@ -531,6 +531,8 @@
         const rem = parseTimeToHours(c[11 + offset]);
         const lgt = parseTimeToHours(c[12 + offset]);
         const dep = parseTimeToHours(c[13 + offset]);
+        const nap = parseTimeToHours(c[14 + offset]);
+        entry.napH = nap > 0 ? nap : 0;
         if (rem > 0 || lgt > 0 || dep > 0) {
           entry.remH = rem; entry.lightH = lgt; entry.deepH = dep;
         }
@@ -730,14 +732,15 @@
             { label: '睡眠スコア (点)', data: rows.map(r => r.sleepScore ?? null), type: 'line', borderColor: '#f59e0b', backgroundColor: '#f59e0b', yAxisID: 'y1', tension: 0.25, order: 0 },
             { label: '深い睡眠 (h)', data: rows.map(r => r.deepH ?? null), backgroundColor: '#6366f1', stack: 'sleep', order: 1 },
             { label: 'レム睡眠 (h)', data: rows.map(r => r.remH ?? null), backgroundColor: '#38bdf8', stack: 'sleep', order: 2 },
-            { label: '浅い睡眠 (h)', data: rows.map(r => r.lightH ?? null), backgroundColor: '#818cf8', stack: 'sleep', order: 3 }
+            { label: '浅い睡眠 (h)', data: rows.map(r => r.lightH ?? null), backgroundColor: '#818cf8', stack: 'sleep', order: 3 },
+            { label: '昼寝 (h)', data: rows.map(r => r.napH ?? 0), backgroundColor: '#10b981', stack: 'sleep', order: 4 }
           ]
         },
         options: {
           responsive: true, maintainAspectRatio: false,
           scales: {
             x: { stacked: true },
-            y: { stacked: true, position: 'left', min: 0, suggestedMax: 10 },
+            y: { stacked: true, position: 'left', min: 0, suggestedMax: 11 },
             y1: { position: 'right', suggestedMin: 50, suggestedMax: 100, grid: { drawOnChartArea: false } }
           }
         }
